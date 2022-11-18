@@ -70,6 +70,12 @@ class ShowPidCommand : public BuiltInCommand {
   virtual ~ShowPidCommand() {}
   void execute() override;
 };
+class ChpromptCommand : public BuiltInCommand {
+public:
+    ChpromptCommand(const char* cmd_line); //TODO- extract the chprompt name.
+    virtual ~ChpromptCommand() {}
+    void execute() override;
+};
 
 class JobsList;
 class QuitCommand : public BuiltInCommand {
