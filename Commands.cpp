@@ -94,10 +94,10 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 
   string cmd_s = _trim(string(cmd_line));
   string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-  if(firstWord.compare("chprompt")==0)
+  /*if(firstWord.compare("chprompt")==0)
   {
       return new ChpromptCommand(cmd_line);
-  }
+  }*/
  /* if (firstWord.compare("pwd") == 0) {
     return new GetCurrDirCommand(cmd_line);
   }
@@ -121,8 +121,8 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 
 void SmallShell::executeCommand(const char *cmd_line) {
     //start with build in functions
-    Command* cmd=CreateCommand(cmd_line);
-    cmd->execute();
+   // Command* cmd=CreateCommand(cmd_line);
+    //cmd->execute();
   // TODO: Add your implementation here
   // for example:
   // Command* cmd = CreateCommand(cmd_line);
@@ -130,6 +130,13 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // Please note that you must fork smash process for some commands (e.g., external commands....)
 }
 
-void GetCurrDirCommand::execute() {
+/*void GetCurrDirCommand::execute() {
+ return;
+}*/
 
-}
+/*ChpromptCommand::ChpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
+//TODO-EXTRACT cmd
+  std::cout<<"lol";
+}*/
+
+
