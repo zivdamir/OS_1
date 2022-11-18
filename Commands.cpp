@@ -22,6 +22,8 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #define FUNC_EXIT()
 #endif
 
+#define NO_PID_NUMBER 0
+
 string _ltrim(const std::string& s)
 {
   size_t start = s.find_first_not_of(WHITESPACE);
@@ -76,20 +78,78 @@ void _removeBackgroundSign(char* cmd_line) {
   // truncate the command line string up to the last non-space character
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
+// TODO: Add your implementation for classes in Commands.h
 
-// TODO: Add your implementation for classes in Commands.h 
+/**Command class implementation**/
+Command::Command(const char* cmd_line){ printf("h");}
+/**Command class implementation**/
 
-SmallShell::SmallShell() {
-   std::cout<<"hey";
+/**BuiltInCommand class implementation**/
+BuiltInCommand::BuiltInCommand(const char* cmd_line): Command(cmd_line) {}
+/**BuiltInCommand class implementation**/
+
+
+
+
+/**JobEntry methods implementation**/
+int JobEntry::getJobId()
+{
+    return id;
+}
+pid_t JobEntry::getJobPid()
+{
+    return getpid();
+}
+Command* JobEntry::getCommand()
+{
+    return command;
+}
+bool JobEntry::isStopped()
+{
+    return stopped_flag;
+}
+
+JobsList::JobsList()
+{
+    data = std::vector<JobEntry*>();
+}
+/**JobEntry methods implementation**/
+
+SmallShell::SmallShell(){
+    foreground_pid = NO_PID_NUMBER;
+    prompt_name = "smash";
+   // jobs_list = new JobsList();
 }
 
 SmallShell::~SmallShell() {
-  std::cout<<"hey";
+  //delete jobs_list;
 }
+
+/**SmallShell our methods implementation**/
+void SmallShell::setPromptName(string new_name)
+{
+    prompt_name = new_name;
+}
+string SmallShell::getPromptName()
+{
+    return prompt_name;
+}
+pid_t SmallShell::getForegroundPid(){
+    return foreground_pid;
+}
+
+pid_t SmallShell::getSmallShellPid()
+{
+    return getpid();
+}
+/**SmallShell our methods implementation**/
+
+
+
 
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
-*/
+**/
 Command * SmallShell::CreateCommand(const char* cmd_line) {
 
   string cmd_s = _trim(string(cmd_line));
@@ -98,9 +158,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   {
       return new ChpromptCommand(cmd_line);
   }*/
- /* if (firstWord.compare("pwd") == 0) {
+ if (firstWord.compare("pwd") == 0) {
     return new GetCurrDirCommand(cmd_line);
-  }
+  }/*
   else if (firstWord.compare("showpid") == 0) {
     return new ShowPidCommand(cmd_line);
   }
@@ -121,18 +181,20 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 
 void SmallShell::executeCommand(const char *cmd_line) {
     //start with build in functions
-   // Command* cmd=CreateCommand(cmd_line);
-    //cmd->execute();
+   Command* cmd=CreateCommand(cmd_line);
+    cmd->execute();
   // TODO: Add your implementation here
   // for example:
   // Command* cmd = CreateCommand(cmd_line);
   // cmd->execute();
   // Please note that you must fork smash process for some commands (e.g., external commands....)
 }
-
-/*void GetCurrDirCommand::execute() {
+GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {}
+void GetCurrDirCommand::execute() {
+ cout << getcwd(NULL, 0) << std::endl;
+  //memory leak?
  return;
-}*/
+}
 
 /*ChpromptCommand::ChpromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
 //TODO-EXTRACT cmd

@@ -12,7 +12,7 @@ class Command {
 // TODO: Add your data members
  public:
   Command(const char* cmd_line);
-  virtual ~Command();
+  virtual ~Command() = default;
   virtual void execute() = 0;
   //virtual void prepare();
   //virtual void cleanup();
@@ -77,23 +77,26 @@ public:
     void execute() override;
 };
 
-class JobsList;
-class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members
+class JobEntry {
+private:
+    int id;
+    Command* command;
+    time_t insertion_time;
+    // maybe we need work time??
+    bool stopped_flag;
 public:
-  QuitCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~QuitCommand() {}
-  void execute() override;
+    int getJobId();
+    pid_t getJobPid();
+    Command* getCommand();
+    bool isStopped();
+    JobEntry(int id, Command* command, time_t insertion_time, bool stopped_flag);
 };
-
 
 class JobsList {
  public:
-  class JobEntry {
-   // TODO: Add your data members
-  };
  // TODO: Add your data members
- public:
+ std::vector<JobEntry*> data;
+public:
   JobsList();
   ~JobsList();
   void addJob(Command* cmd, bool isStopped = false);
@@ -106,6 +109,15 @@ class JobsList {
   JobEntry *getLastStoppedJob(int *jobId);
   // TODO: Add extra methods or modify exisitng ones as needed
 };
+
+class QuitCommand : public BuiltInCommand {
+// TODO: Add your data members
+public:
+    QuitCommand(const char* cmd_line, JobsList* jobs);
+    virtual ~QuitCommand() {}
+    void execute() override;
+};
+
 
 class JobsCommand : public BuiltInCommand {
  // TODO: Add your data members
@@ -169,11 +181,14 @@ class KillCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
- //ziv 
-  string prompt_name="smash";
-  // TODO: Add your data members
+ /**our additional parameters**/
+ string prompt_name;
+ pid_t foreground_pid;
+ JobsList* jobs_list;
+ /**our additional parameters**/
   SmallShell();
  public:
+ /**the original methods**/
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
@@ -185,15 +200,15 @@ class SmallShell {
   }
   ~SmallShell();
   void executeCommand(const char* cmd_line);
-  void set_prompt_name(string prompt_name="smash"){
-    this->prompt_name=prompt_name;
-  }
-  string get_prompt_name()
-  {
-    return this->prompt_name;
-  }
+  /**the original methods**/
 
-  // TODO: add extra methods as needed
+    /**our additional methods**/
+  void setPromptName(string new_name);
+  string getPromptName();
+  pid_t getForegroundPid();
+  pid_t getSmallShellPid();
+    /**our additional methods**/
+
 };
 
 #endif //SMASH_COMMAND_H_
