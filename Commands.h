@@ -2,9 +2,11 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
+#include <string>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
+using std::string;
 
 class Command {
 // TODO: Add your data members
@@ -161,6 +163,8 @@ class KillCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
+ //ziv 
+  string prompt_name="smash";
   // TODO: Add your data members
   SmallShell();
  public:
@@ -175,6 +179,14 @@ class SmallShell {
   }
   ~SmallShell();
   void executeCommand(const char* cmd_line);
+  void set_prompt_name(string prompt_name="smash"){
+    this->prompt_name=prompt_name;
+  }
+  string get_prompt_name()
+  {
+    return this->prompt_name;
+  }
+
   // TODO: add extra methods as needed
 };
 
