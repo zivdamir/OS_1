@@ -10,9 +10,13 @@ using std::string;
 
 class Command {
 // TODO: Add your data members
+protected:
+    char cmd_line[80];
+    char* arg[20];
+    int arg_num;
  public:
   Command(const char* cmd_line);
-  virtual ~Command() = default;
+  virtual ~Command();
   virtual void execute() = 0;
   //virtual void prepare();
   //virtual void cleanup();
@@ -52,9 +56,14 @@ class RedirectionCommand : public Command {
 
 class ChangeDirCommand : public BuiltInCommand {
 // TODO: Add your data members public:
-  ChangeDirCommand(const char* cmd_line, char** plastPwd);
-  virtual ~ChangeDirCommand() {}
+private:
+   // string* plast_pwd = nullptr;//todo remove if redundant
+public:
+  ChangeDirCommand(const char* cmd_line);
+  virtual ~ChangeDirCommand();
   void execute() override;
+  //string* getPLastPwd();//todo remove if redundant
+ // void setLastPwd(string* new_last_pwd);//todo remove if redundant
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
@@ -72,7 +81,7 @@ class ShowPidCommand : public BuiltInCommand {
 };
 class ChpromptCommand : public BuiltInCommand {
 public:
-    ChpromptCommand(const char* cmd_line); //TODO- extract the chprompt name.
+    ChpromptCommand(const char* cmd_line);
     virtual ~ChpromptCommand() {}
     void execute() override;
 };
@@ -89,11 +98,15 @@ public:
     pid_t getJobPid();
     Command* getCommand();
     bool isStopped();
-    JobEntry(int id, Command* command, time_t insertion_time, bool stopped_flag);
+    JobEntry(int id, Command* command, bool stopped_flag);
+    ~JobEntry();
+
+    //todo operator==(),operator<=()
+
 };
 
 class JobsList {
- public:
+private:
  // TODO: Add your data members
  std::vector<JobEntry*> data;
 public:
@@ -185,6 +198,7 @@ class SmallShell {
  string prompt_name;
  pid_t foreground_pid;
  JobsList* jobs_list;
+ string last_pwd = "";
  /**our additional parameters**/
   SmallShell();
  public:
@@ -203,10 +217,19 @@ class SmallShell {
   /**the original methods**/
 
     /**our additional methods**/
-  void setPromptName(string new_name);
+  void setPromptName(string new_name="smash");
   string getPromptName();
   pid_t getForegroundPid();
   pid_t getSmallShellPid();
+  void setForegroundPid(pid_t new_fg_pid);
+
+    /**change dir support methods**/
+    string getLastPwd();
+    void setLastPwd(string new_last_pwd);
+    bool wasCDCalled=false; // indicates whether CD command was already called, false if not (if not last_pwd is not valid) (used in "cd -" command)
+    /**change dir support methods**/
+
+
     /**our additional methods**/
 
 };
