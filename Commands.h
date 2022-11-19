@@ -14,7 +14,7 @@ class Command {
 // TODO: Add your data members
 protected:
     char cmd_line[80];
-    char* arg[20];
+    char* arg[COMMAND_MAX_ARGS];
     int arg_num;
  public:
   Command(const char* cmd_line);
@@ -113,7 +113,7 @@ public:
         return this->id<=jobEntry.id;
     }
     friend ostream& operator<<(ostream& os,JobEntry& jobEntry);
-    
+
 
 };
 
