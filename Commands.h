@@ -113,7 +113,7 @@ public:
         return this->id<=jobEntry.id;
     }
     friend ostream& operator<<(ostream& os,JobEntry& jobEntry);
-    //todo operator==(),operator<=()
+    
 
 };
 
