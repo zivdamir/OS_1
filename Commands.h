@@ -3,17 +3,18 @@
 
 #include <vector>
 #include <string>
+#include <cstdio>
+#include <cstring>
 //to make cd& and cd the same , what we should is the following
 // in internal commnads, copy the stirng ot antoer string, check if its has & sign and then remove it if it has it.(and then we won't remove it from the external)
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 using std::string;
 using std::ostream;
-
 class Command {
 // TODO: Add your data members
 protected:
-    char cmd_line[80];
+     char cmd_line[80];
     char* arg[COMMAND_MAX_ARGS];
     int arg_num;
  public:
@@ -174,6 +175,7 @@ class BackgroundCommand : public BuiltInCommand {
 class TimeoutCommand : public BuiltInCommand {
 /* Optional */
 // TODO: Add your data members
+ const char* cmd_line;
  public:
   explicit TimeoutCommand(const char* cmd_line);
   virtual ~TimeoutCommand() {}
