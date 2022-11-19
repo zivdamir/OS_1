@@ -8,13 +8,13 @@
 #include "Commands.h"
 #include "assert.h"
 #include "time.h"
-
+#include <algorithm>
 using namespace std;
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::vector;
-
+using std::sort;
 const std::string WHITESPACE = " \n\r\t\f\v";
 
 #if 0
@@ -104,6 +104,11 @@ Command::~Command() {
         free(arg[i]);
     }
 }
+
+ostream &operator<<(ostream &os, Command &command) {
+    os<<string(command.cmd_line);
+    return os;
+}
 /**Command class implementation**/
 
 /**BuiltInCommand class implementation**/
@@ -130,7 +135,16 @@ JobEntry::~JobEntry() {}
 int JobEntry::getJobId() {
     return id;
 }
-
+JobEntry* JobsList::find_by_jobid(int id){
+    for(JobEntry* job:this->data)
+    {
+        if(job->getJobId()==id)
+        {
+            return job;
+        }
+    }
+    return nullptr;
+}
 pid_t JobEntry::getJobPid() {
     return getpid();
 }
@@ -141,6 +155,14 @@ Command *JobEntry::getCommand() {
 
 bool JobEntry::isStopped() {
     return stopped_flag;
+}
+
+ostream & operator<<(ostream &os, JobEntry &jobEntry) {
+    //[<job-id>]<-check <command> : <process id> <seconds elapsed> (stopped)
+            os<<jobEntry.id<<" "<<jobEntry.command<<" : "<<jobEntry.getJobPid()<<" "
+            <<difftime(jobEntry.insertion_time,time(NULL))
+            <<" "<<jobEntry.stopped_flag?"(stopped)":"";
+    return os;
 }
 /**JobEntry methods implementation**/
 
@@ -157,14 +179,15 @@ JobsList::~JobsList() {
 }
 
 void JobsList::addJob(Command *cmd, bool isStopped) {
-    printf("kill me\n");
+    //first, try to find..
+    JobEntry* jobEntry=new JobEntry(getpid(),cmd,isStopped);//todo isStopped neccesary?
+    this->data.push_back(jobEntry);
 }
 
 void JobsList::printJobsList() {
     //JobsList.removeFinishedJobs();
     for (JobEntry *job: data) {
-
-        //cout<<job;
+        cout<<job;
     }
 }
 
@@ -183,7 +206,7 @@ void JobsList::removeFinishedJobs() {
 }
 
 JobEntry *JobsList::getJobById(int jobId) {
-    //return this->find
+    return find_by_jobid(jobId);
 }
 
 void JobsList::removeJobById(int jobId) {
@@ -196,6 +219,10 @@ JobEntry *JobsList::getLastJob(int *lastJobId) {
 
 JobEntry *JobsList::getLastStoppedJob(int *jobId) {
     //return find last stopped
+}
+
+void JobsList::sort_JobsList() {
+    sort(data.begin(),data.end());
 }
 
 /**JobList methods implementation**/

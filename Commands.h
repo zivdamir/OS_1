@@ -3,10 +3,12 @@
 
 #include <vector>
 #include <string>
-
+//to make cd& and cd the same , what we should is the following
+// in internal commnads, copy the stirng ot antoer string, check if its has & sign and then remove it if it has it.(and then we won't remove it from the external)
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 using std::string;
+using std::ostream;
 
 class Command {
 // TODO: Add your data members
@@ -18,6 +20,7 @@ protected:
   Command(const char* cmd_line);
   virtual ~Command();
   virtual void execute() = 0;
+  friend ostream& operator<<(ostream& os,Command& command);
   //virtual void prepare();
   //virtual void cleanup();
   // TODO: Add your extra methods if needed
@@ -100,7 +103,16 @@ public:
     bool isStopped();
     JobEntry(int id, Command* command, bool stopped_flag);
     ~JobEntry();
-
+    bool operator==(JobEntry jobEntry)//by job entry. we dont care about the command actual things.
+    {
+        return this->id==jobEntry.id;
+    }
+    bool operator<=(JobEntry jobEntry)
+    {
+        //same idea as == operator, we don't care about commands string content. only about the job id.
+        return this->id<=jobEntry.id;
+    }
+    friend ostream& operator<<(ostream& os,JobEntry& jobEntry);
     //todo operator==(),operator<=()
 
 };
@@ -109,9 +121,12 @@ class JobsList {
 private:
  // TODO: Add your data members
  std::vector<JobEntry*> data;
+
 public:
   JobsList();
+  void sort_JobsList();
   ~JobsList();
+  JobEntry* find_by_jobid(int id);
   void addJob(Command* cmd, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
