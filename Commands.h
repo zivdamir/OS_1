@@ -121,7 +121,7 @@ class JobsList {
 private:
  // TODO: Add your data members
  std::vector<JobEntry*> data;
-
+ int curr_jobid_max=0;//todo implement ziv
 public:
   JobsList();
   void sort_JobsList();
