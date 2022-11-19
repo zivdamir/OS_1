@@ -29,7 +29,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #endif
 
 #define NO_PID_NUMBER 0
-
+//todo for ziv - implement joblist correctly and work on background stuff.(check valgrind)
 string _ltrim(const std::string &s) {
     size_t start = s.find_first_not_of(WHITESPACE);
     return (start == std::string::npos) ? "" : s.substr(start);
