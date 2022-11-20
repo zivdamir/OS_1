@@ -339,7 +339,8 @@ void SmallShell::executeCommand(const char *cmd_line) {
 GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
 void GetCurrDirCommand::execute() {
-    char *path = getcwd(NULL, 0);
+    char *path =getcwd(NULL, 0);
+
     cout << path << std::endl;
     free((void *) path);
     return;
@@ -416,7 +417,7 @@ void ChangeDirCommand::execute() {
         instance.wasCDCalled = true;
         instance.setLastPwd(string(to_switch_cwd));
 
-        chdir(arg[1]);
+        DO_SYS(chdir(arg[1]));
         free(to_switch_cwd);
         //we need to check if the syscall works
 
@@ -441,13 +442,13 @@ void ExternalCommand::execute() {
     if (pid == 0) // my son
     {
         if (isExternalComplex(string(cmd_line))) {
-            execl("/bin/bash", "bash", "-c", cmd_line, nullptr);
+            DO_SYS(execl("/bin/bash", "bash", "-c", cmd_line, nullptr));
         } else {
-            execv(this->arg[0], this->arg);
+            DO_SYS(execv(this->arg[0], this->arg));
         }
     } else // fatha'
     {
-        waitpid(pid, NULL, 0);
+        DO_SYS(waitpid(pid, NULL, 0));
     }
 }
 

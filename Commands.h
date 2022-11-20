@@ -5,6 +5,8 @@
 #include <string>
 #include <cstdio>
 #include <cstring>
+#define DO_SYS( syscall ) if ((syscall) == -1 ){ perror(#syscall); exit(1); }
+
 //to make cd& and cd the same , what we should is the following
 // in internal commnads, copy the stirng ot antoer string, check if its has & sign and then remove it if it has it.(and then we won't remove it from the external)
 #define COMMAND_ARGS_MAX_LENGTH (200)
