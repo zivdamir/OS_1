@@ -11,6 +11,7 @@
 #define COMMAND_MAX_ARGS (20)
 using std::string;
 using std::ostream;
+enum FINDSTATUS{FOUND=0,NOT_FOUND=1,FOUND_NOT_STOPPED=2};//serves as status for find method.
 class Command {
 // TODO: Add your data members
 protected:
@@ -20,7 +21,10 @@ protected:
  public:
   Command(const char* cmd_line);
   virtual ~Command();
-  virtual void execute() = 0;
+  virtual void execute(){
+      std::cout<<"Command execute function";
+      throw;
+  }
   friend ostream& operator<<(ostream& os,Command& command);
   //virtual void prepare();
   //virtual void cleanup();
@@ -95,7 +99,7 @@ private:
     int id;
     Command* command;
     time_t insertion_time;
-    // maybe we need work time??
+    time_t work_time;//for stopped jobs we will measure it as soon as we stop it(stopped jobs dont "work")
     bool stopped_flag;
 public:
     int getJobId();
@@ -127,12 +131,13 @@ public:
   JobsList();
   void sort_JobsList();
   ~JobsList();
-  JobEntry* find_by_jobid(int id);
+  int getMaxJobId();
+  JobEntry* find_by_jobid(int id,enum FINDSTATUS* find_status);
   void addJob(Command* cmd, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
-  JobEntry * getJobById(int jobId);
+  JobEntry * getJobById(int ,enum FINDSTATUS* findstatus);//findstatus should be sent as empty POINTER!!!
   void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);

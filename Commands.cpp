@@ -29,6 +29,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #endif
 
 #define NO_PID_NUMBER 0
+
 //todo for ziv - implement joblist correctly and work on background stuff.(check valgrind)
 string _ltrim(const std::string &s) {
     size_t start = s.find_first_not_of(WHITESPACE);
@@ -125,24 +126,32 @@ BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {}
 /**JobEntry methods implementation**/
 JobEntry::JobEntry(int id, Command *command, bool stopped_flag) {
     this->id = id;
+    this->command=new Command("");
     memcpy(this->command, command, sizeof(*command));
     this->insertion_time = time(NULL);
     this->stopped_flag = stopped_flag;
 }
 
-JobEntry::~JobEntry() {}
+JobEntry::~JobEntry() {
+
+}
 
 int JobEntry::getJobId() {
     return id;
 }
-JobEntry* JobsList::find_by_jobid(int id){
+
+JobEntry* JobsList::find_by_jobid(int id,enum FINDSTATUS* find_status){
+    /*find_status - to be returned(our function mallocs it , so we should give empty pointers to it*/
+    find_status=(enum FINDSTATUS*)malloc(sizeof(*find_status));
     for(JobEntry* job:this->data)
     {
         if(job->getJobId()==id)
         {
+            *find_status=FOUND;
             return job;
         }
     }
+    *find_status=NOT_FOUND;
     return nullptr;
 }
 pid_t JobEntry::getJobPid() {
@@ -158,10 +167,11 @@ bool JobEntry::isStopped() {
 }
 
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
+    string stopped=(jobEntry.stopped_flag)? "(stopped)":"";
     //[<job-id>]<-check <command> : <process id> <seconds elapsed> (stopped)
-            os<<jobEntry.id<<" "<<jobEntry.command<<" : "<<jobEntry.getJobPid()<<" "
-            <<difftime(jobEntry.insertion_time,time(NULL))
-            <<" "<<jobEntry.stopped_flag?"(stopped)":"";
+            os <<"["<< jobEntry.id <<"]"<< " " << *jobEntry.command << " : " << jobEntry.getJobId() << " "
+               << difftime(jobEntry.insertion_time,time(NULL))<<" secs"
+               << " " << stopped;
     return os;
 }
 /**JobEntry methods implementation**/
@@ -178,16 +188,18 @@ JobsList::~JobsList() {
     }
 }
 
-void JobsList::addJob(Command *cmd, bool isStopped) {
-    //first, try to find..
-    JobEntry* jobEntry=new JobEntry(getpid(),cmd,isStopped);//todo isStopped neccesary?
+void JobsList::addJob(Command *cmd, bool isStopped)
+{
+    JobEntry* jobEntry=new JobEntry((this->curr_jobid_max==0)?  1 : this->getMaxJobId()+1
+            ,cmd,isStopped);//todo isStopped neccesary?
     this->data.push_back(jobEntry);
+    this->curr_jobid_max=getMaxJobId();
 }
 
 void JobsList::printJobsList() {
     //JobsList.removeFinishedJobs();
     for (JobEntry *job: data) {
-        cout<<job;
+        cout<<*job<<endl;
     }
 }
 
@@ -205,12 +217,22 @@ void JobsList::removeFinishedJobs() {
     }
 }
 
-JobEntry *JobsList::getJobById(int jobId) {
-    return find_by_jobid(jobId);
+JobEntry *JobsList::getJobById(int jobId,enum FINDSTATUS* findstatus) {
+    JobEntry* jobEntry= find_by_jobid(jobId,findstatus);
+
 }
 
 void JobsList::removeJobById(int jobId) {
-    //delete this->find
+    FINDSTATUS* fd;
+    JobEntry* to_find= find_by_jobid(jobId,fd);
+    if(*fd==NOT_FOUND)
+    {
+        cout<<"not found ,TODO"<<endl;
+    }
+    if(*fd==FOUND)
+    {
+        cout<<"found, TODO"<<endl;
+    }
 }
 
 JobEntry *JobsList::getLastJob(int *lastJobId) {
@@ -223,6 +245,15 @@ JobEntry *JobsList::getLastStoppedJob(int *jobId) {
 
 void JobsList::sort_JobsList() {
     sort(data.begin(),data.end());
+}
+
+int JobsList::getMaxJobId() {
+    int max_job_id=0;
+    for(JobEntry* job:this->data)
+    {
+        max_job_id=max(max_job_id,job->getJobId());
+    }
+    return max_job_id;
 }
 
 /**JobList methods implementation**/
