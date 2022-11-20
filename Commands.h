@@ -94,6 +94,7 @@ public:
     void execute() override;
 };
 
+
 class JobEntry {
 private:
     int id;
@@ -154,9 +155,10 @@ public:
 
 
 class JobsCommand : public BuiltInCommand {
- // TODO: Add your data members
+private:
+    JobsList* job_list;
  public:
-  JobsCommand(const char* cmd_line, JobsList* jobs);
+  JobsCommand(const char* cmd_line);//jobslist* jobs_list
   virtual ~JobsCommand() {}
   void execute() override;
 };
@@ -243,6 +245,7 @@ class SmallShell {
   string getPromptName();
   pid_t getForegroundPid();
   pid_t getSmallShellPid();
+  JobsList* getJobsList();
   void setForegroundPid(pid_t new_fg_pid);
 
     /**change dir support methods**/

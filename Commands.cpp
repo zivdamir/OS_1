@@ -380,6 +380,10 @@ void SmallShell::setLastPwd(string new_last_pwd) {
     last_pwd = new_last_pwd;
 }
 
+JobsList *SmallShell::getJobsList() {
+    return this->jobs_list;
+}
+
 void ChangeDirCommand::execute() {
 
     //todo check if the command arguments not empty
@@ -425,7 +429,6 @@ void ExternalCommand::execute() {
     bool is_background = _isBackgroundCommand(cmd_line);
     if (is_background) {
         _removeBackgroundSign(cmd_line);
-
     }
 
     //todo check if the command not empty
@@ -449,5 +452,14 @@ void ExternalCommand::execute() {
 }
 
 
+JobsCommand::JobsCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
+
+  this->job_list=SmallShell::getInstance().getJobsList();
+}
+
+void JobsCommand::execute() {
+    //maybe here clean jobslist..
+    job_list->printJobsList();
+}
 
 
