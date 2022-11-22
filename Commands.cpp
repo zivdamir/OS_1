@@ -113,7 +113,10 @@ ostream &operator<<(ostream &os, Command &command) {
 /**Command class implementation**/
 
 /**BuiltInCommand class implementation**/
-BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {}
+BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line)
+{
+    this->job_list=SmallShell::getInstance().getJobsList();
+}
 /**BuiltInCommand class implementation**/
 
 /**ExternalCommand class implementation**/
@@ -165,11 +168,14 @@ Command *JobEntry::getCommand() {
 bool JobEntry::isStopped() {
     return stopped_flag;
 }
+void JobEntry::printCommand() {
+    cout<<command<< " : " << this->getJobPid() << endl;
+}
 
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
     string stopped=(jobEntry.stopped_flag)? "(stopped)":"";
     //[<job-id>]<-check <command> : <process id> <seconds elapsed> (stopped)
-            os <<"["<< jobEntry.id <<"]"<< " " << *jobEntry.command << " : " << jobEntry.getJobId() << " "
+            os <<"["<< jobEntry.id <<"]"<< " " << *jobEntry.command << " : " << jobEntry.getJobPid() << " "
                << difftime(jobEntry.insertion_time,time(NULL))<<" secs"
                << " " << stopped;
     return os;
@@ -437,9 +443,6 @@ void ExternalCommand::execute() {
     //todo check if the command not empty
     //todo insert to the job list!
 
-
-
-
     pid_t pid = fork();
     if (pid == 0) // my son
     {
@@ -455,14 +458,20 @@ void ExternalCommand::execute() {
 }
 
 
-JobsCommand::JobsCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
-
-  this->job_list=SmallShell::getInstance().getJobsList();
-}
+JobsCommand::JobsCommand(const char *cmd_line): BuiltInCommand(cmd_line) {}
 
 void JobsCommand::execute() {
     this->job_list->removeFinishedJobs();
     this->job_list->printJobsList();
 }
+
+
+ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs): BuiltInCommand(cmd_line){}
+void ForegroundCommand::execute()
+{
+    //status
+   // getJobById(arg[1],);
+}
+
 
 
