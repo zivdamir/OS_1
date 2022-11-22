@@ -264,11 +264,11 @@ int JobsList::getMaxJobId() {
 SmallShell::SmallShell() {
     foreground_pid = NO_PID_NUMBER;
     prompt_name = "smash";
-    // jobs_list = new JobsList();
+    jobs_list = new JobsList();
 }
 
 SmallShell::~SmallShell() {
-    //delete jobs_list;
+    delete jobs_list;
 }
 
 /**SmallShell our methods implementation**/
@@ -311,6 +311,8 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
         return new ShowPidCommand(cmd_line);
     } else if (firstWord.compare("cd") == 0) {
         return new ChangeDirCommand(cmd_line);
+    } else if (firstWord.compare("jobs") == 0) {
+        return new JobsCommand(cmd_line);
     } else {
         //home/student/Desktop/external_test_commands/ziv.o
         return new ExternalCommand(cmd_line);
@@ -459,8 +461,8 @@ JobsCommand::JobsCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
 }
 
 void JobsCommand::execute() {
-    //maybe here clean jobslist..
-    job_list->printJobsList();
+    this->job_list->removeFinishedJobs();
+    this->job_list->printJobsList();
 }
 
 
