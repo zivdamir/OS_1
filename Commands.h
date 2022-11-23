@@ -33,11 +33,6 @@ protected:
   // TODO: Add your extra methods if needed
 };
 
-class BuiltInCommand : public Command {
- public:
-  BuiltInCommand(const char* cmd_line);
-  virtual ~BuiltInCommand() {}
-};
 
 class ExternalCommand : public Command {
  public:
@@ -62,6 +57,14 @@ class RedirectionCommand : public Command {
   void execute() override;
   //void prepare() override;
   //void cleanup() override;
+};
+class JobsList;
+class BuiltInCommand : public Command {
+protected:
+    JobsList* job_list;
+public:
+    BuiltInCommand(const char* cmd_line);
+    virtual ~BuiltInCommand() {}
 };
 
 class ChangeDirCommand : public BuiltInCommand {
@@ -108,6 +111,7 @@ public:
     int getJobId();
     pid_t getJobPid();
     Command* getCommand();
+    void printCommandForFgCommand(); // for foreground command
     bool isStopped();
     JobEntry(int id, Command* command, bool stopped_flag);
     ~JobEntry();
@@ -157,8 +161,6 @@ public:
 
 
 class JobsCommand : public BuiltInCommand {
-private:
-    JobsList* job_list;
  public:
   JobsCommand(const char* cmd_line);//jobslist* jobs_list
   virtual ~JobsCommand() {}
@@ -168,7 +170,7 @@ private:
 class ForegroundCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  ForegroundCommand(const char* cmd_line, JobsList* jobs);
+  ForegroundCommand(const char* cmd_line);
   virtual ~ForegroundCommand() {}
   void execute() override;
 };
@@ -176,7 +178,7 @@ class ForegroundCommand : public BuiltInCommand {
 class BackgroundCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  BackgroundCommand(const char* cmd_line, JobsList* jobs);
+  BackgroundCommand(const char* cmd_line);
   virtual ~BackgroundCommand() {}
   void execute() override;
 };

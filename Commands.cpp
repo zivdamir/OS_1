@@ -29,6 +29,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #endif
 
 #define NO_PID_NUMBER 0
+enum{THE_CHARACTER_IS_NOT_A_NUMBER=-1,JOB_LIST_IS_EMPTY=0};
 
 //todo for ziv - implement joblist correctly and work on background stuff.(check valgrind)
 string _ltrim(const std::string &s) {
@@ -93,6 +94,22 @@ bool isExternalComplex(string cmd_line) {
 }
 /**external command support**/
 
+/* support function for fgcommand*/
+int char_to_int(const char* str)
+{
+    int value;
+    int i = 0;
+    while(i<80 && str[i] !='\0')
+    {
+        if(str[i] < '0' || str[i] > '9') return THE_CHARACTER_IS_NOT_A_NUMBER; //val[i] isn't a number..
+        value *= 10;
+        value += str[i] - 48;
+    }
+    return value;
+}
+/* support function for fgcommand*/
+
+
 
 /**Command class implementation**/
 Command::Command(const char *cmd_line) {
@@ -113,7 +130,10 @@ ostream &operator<<(ostream &os, Command &command) {
 /**Command class implementation**/
 
 /**BuiltInCommand class implementation**/
-BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {}
+BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line)
+{
+    this->job_list=SmallShell::getInstance().getJobsList();
+}
 /**BuiltInCommand class implementation**/
 
 /**ExternalCommand class implementation**/
@@ -165,11 +185,14 @@ Command *JobEntry::getCommand() {
 bool JobEntry::isStopped() {
     return stopped_flag;
 }
+void JobEntry::printCommandForFgCommand() {
+    cout<<command<< " : " << this->getJobPid() << endl;
+}
 
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
     string stopped=(jobEntry.stopped_flag)? "(stopped)":"";
     //[<job-id>]<-check <command> : <process id> <seconds elapsed> (stopped)
-            os <<"["<< jobEntry.id <<"]"<< " " << *jobEntry.command << " : " << jobEntry.getJobId() << " "
+            os <<"["<< jobEntry.id <<"]"<< " " << *jobEntry.command << " : " << jobEntry.getJobPid() << " "
                << difftime(jobEntry.insertion_time,time(NULL))<<" secs"
                << " " << stopped;
     return os;
@@ -223,6 +246,8 @@ JobEntry *JobsList::getJobById(int jobId,enum FINDSTATUS* findstatus) {
 }
 
 void JobsList::removeJobById(int jobId) {
+    /*todo finish removeJobById implementation
+     * so the job will be remove from the list but not deleted!!*/
     FINDSTATUS* fd;
     JobEntry* to_find= find_by_jobid(jobId,fd);
     if(*fd==NOT_FOUND)
@@ -248,7 +273,7 @@ void JobsList::sort_JobsList() {
 }
 
 int JobsList::getMaxJobId() {
-    int max_job_id=0;
+    int max_job_id=JOB_LIST_IS_EMPTY;
     for(JobEntry* job:this->data)
     {
         max_job_id=max(max_job_id,job->getJobId());
@@ -264,11 +289,11 @@ int JobsList::getMaxJobId() {
 SmallShell::SmallShell() {
     foreground_pid = NO_PID_NUMBER;
     prompt_name = "smash";
-    // jobs_list = new JobsList();
+    jobs_list = new JobsList();
 }
 
 SmallShell::~SmallShell() {
-    //delete jobs_list;
+    delete jobs_list;
 }
 
 /**SmallShell our methods implementation**/
@@ -311,6 +336,8 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
         return new ShowPidCommand(cmd_line);
     } else if (firstWord.compare("cd") == 0) {
         return new ChangeDirCommand(cmd_line);
+    } else if (firstWord.compare("jobs") == 0) {
+        return new JobsCommand(cmd_line);
     } else {
         //home/student/Desktop/external_test_commands/ziv.o
         return new ExternalCommand(cmd_line);
@@ -435,9 +462,6 @@ void ExternalCommand::execute() {
     //todo check if the command not empty
     //todo insert to the job list!
 
-
-
-
     pid_t pid = fork();
     if (pid == 0) // my son
     {
@@ -452,15 +476,58 @@ void ExternalCommand::execute() {
     }
 }
 
-
-JobsCommand::JobsCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
-
-  this->job_list=SmallShell::getInstance().getJobsList();
-}
+// todo test the jobs command
+JobsCommand::JobsCommand(const char *cmd_line): BuiltInCommand(cmd_line) {}
 
 void JobsCommand::execute() {
-    //maybe here clean jobslist..
-    job_list->printJobsList();
+    //todo check error cases and treat them
+    this->job_list->removeFinishedJobs();
+    this->job_list->printJobsList();
 }
+// todo test the foreground command
+ForegroundCommand::ForegroundCommand(const char* cmd_line): BuiltInCommand(cmd_line){}
+void ForegroundCommand::execute()
+{
+    //todo check error cases and treat them
+    //todo check char_to_int  function
+    this->job_list->removeFinishedJobs();
+    FINDSTATUS* status;
+
+
+    /*find the job in the job list, remove it and print it*/
+    JobEntry* job_to_front;
+    int job_id = -1;
+    if(arg_num<2) {
+        job_id = job_list->getMaxJobId();
+    }
+    else
+    {
+        job_id = char_to_int(arg[1]);
+    }
+    /*todo add
+     * if job_id=JOB_LIST_IS_EMPTY then error
+     * if job_id=THE_CHARACTER_IS_NOT_A_NUMBER then error
+     * */
+
+    job_to_front = job_list->getJobById(job_id,status);
+
+    //todo check status?
+    //todo finish removeJobById implementation
+    job_list->removeJobById(job_id);
+    job_to_front->printCommandForFgCommand();
+    /*----------------------------------------------------*/
+
+
+    /*tell the process to continue and then wait for it*/
+    pid_t job_pid = job_to_front->getJobPid();
+    kill(job_pid,SIGCONT);
+    waitpid(job_pid,NULL,0);
+    /*----------------------------------------------------*/
+}
+
+BackgroundCommand::BackgroundCommand(const char* cmd_line): BuiltInCommand(cmd_line){}
+void BackgroundCommand::execute(){}
+
+
 
 
