@@ -113,8 +113,10 @@ int char_to_int(const char* str)
 
 /**Command class implementation**/
 Command::Command(const char *cmd_line) {
-    strcpy(this->cmd_line, cmd_line);
     this->arg_num = _parseCommandLine(cmd_line, this->arg);
+    this->is_background = _isBackgroundCommand(cmd_line);
+    strcpy(this->cmd_line, cmd_line);
+    _removeBackgroundSign(this->cmd_line);
 }
 
 Command::~Command() {

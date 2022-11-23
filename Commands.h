@@ -20,6 +20,7 @@ protected:
      char cmd_line[80];
     char* arg[COMMAND_MAX_ARGS];
     int arg_num;
+    bool is_background;
  public:
   Command(const char* cmd_line);
   virtual ~Command();
