@@ -111,7 +111,7 @@ public:
     int getJobId();
     pid_t getJobPid();
     Command* getCommand();
-    void printCommand(); // for foreground command
+    void printCommandForFgCommand(); // for foreground command
     bool isStopped();
     JobEntry(int id, Command* command, bool stopped_flag);
     ~JobEntry();
@@ -170,7 +170,7 @@ class JobsCommand : public BuiltInCommand {
 class ForegroundCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  ForegroundCommand(const char* cmd_line, JobsList* jobs);
+  ForegroundCommand(const char* cmd_line);
   virtual ~ForegroundCommand() {}
   void execute() override;
 };

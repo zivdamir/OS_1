@@ -93,6 +93,22 @@ bool isExternalComplex(string cmd_line) {
 }
 /**external command support**/
 
+/* support function for fgcommand*/
+int char_to_int(const char* str)
+{
+    int value;
+    int i = 0;
+    while(i<80 && str[i] !='\0')
+    {
+        if(str[i] < '0' || str[i] > '9') return -1; //val[i] isn't a number..
+        value *= 10;
+        value += str[i] - 48;
+    }
+    return value;
+}
+/* support function for fgcommand*/
+
+
 
 /**Command class implementation**/
 Command::Command(const char *cmd_line) {
@@ -168,7 +184,7 @@ Command *JobEntry::getCommand() {
 bool JobEntry::isStopped() {
     return stopped_flag;
 }
-void JobEntry::printCommand() {
+void JobEntry::printCommandForFgCommand() {
     cout<<command<< " : " << this->getJobPid() << endl;
 }
 
@@ -229,6 +245,8 @@ JobEntry *JobsList::getJobById(int jobId,enum FINDSTATUS* findstatus) {
 }
 
 void JobsList::removeJobById(int jobId) {
+    /*todo finish removeJobById implementation
+     * so the job will be remove from the list but not deleted!!*/
     FINDSTATUS* fd;
     JobEntry* to_find= find_by_jobid(jobId,fd);
     if(*fd==NOT_FOUND)
@@ -457,21 +475,41 @@ void ExternalCommand::execute() {
     }
 }
 
-
+// todo test the jobs command
 JobsCommand::JobsCommand(const char *cmd_line): BuiltInCommand(cmd_line) {}
 
 void JobsCommand::execute() {
+    //todo check error cases and treat them
     this->job_list->removeFinishedJobs();
     this->job_list->printJobsList();
 }
-
-
-ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs): BuiltInCommand(cmd_line){}
+// todo test the foreground command
+ForegroundCommand::ForegroundCommand(const char* cmd_line): BuiltInCommand(cmd_line){}
 void ForegroundCommand::execute()
 {
-    //status
-   // getJobById(arg[1],);
+    //todo check error cases and treat them
+    //todo check char_to_int  function
+    this->job_list->removeFinishedJobs();
+    FINDSTATUS* status;
+    int job_id = char_to_int(arg[1]);
+
+    /*find the job in the job list, remove it and print it*/
+    JobEntry* job_to_front = job_list->getJobById(job_id,status);
+    //todo check status?
+    //todo finish removeJobById implementation
+    job_list->removeJobById(job_id);
+    job_to_front->printCommandForFgCommand();
+    /*----------------------------------------------------*/
+
+
+    /*tell the process to continue and then wait for it*/
+    pid_t job_pid = job_to_front->getJobPid();
+    kill(job_pid,SIGCONT);
+    waitpid(job_pid,NULL,0);
+    /*----------------------------------------------------*/
 }
+
+
 
 
 
