@@ -11,18 +11,21 @@
 // in internal commnads, copy the stirng ot antoer string, check if its has & sign and then remove it if it has it.(and then we won't remove it from the external)
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
+#define COMMAND_MAX_LENGTH (80)
 using std::string;
 using std::ostream;
-enum FINDSTATUS{FOUND=0,NOT_FOUND=1,FOUND_NOT_STOPPED=2};//serves as status for find method.
+enum FINDSTATUS{NOT_FOUND=0,FOUND=1,FOUND_NOT_STOPPED=2};//serves as status for find method.
+class JobsList;
 class Command {
 // TODO: Add your data members
 protected:
     bool is_pipe_command;
     bool is_redirection_command;
-     char cmd_line[80];
+    char cmd_line[COMMAND_MAX_LENGTH];
     char* arg[COMMAND_MAX_ARGS];
     int arg_num;
     bool is_background;
+    JobsList* job_list;
  public:
   Command(const char* cmd_line);
   virtual ~Command();
@@ -61,10 +64,7 @@ class RedirectionCommand : public Command {
   //void prepare() override;
   //void cleanup() override;
 };
-class JobsList;
 class BuiltInCommand : public Command {
-protected:
-    JobsList* job_list;
 public:
     BuiltInCommand(const char* cmd_line);
     virtual ~BuiltInCommand() {}
@@ -106,6 +106,7 @@ public:
 class JobEntry {
 private:
     int id;
+    pid_t pid;
     Command* command;
     time_t insertion_time;
     time_t work_time;//for stopped jobs we will measure it as soon as we stop it(stopped jobs dont "work")
@@ -116,7 +117,7 @@ public:
     Command* getCommand();
     void printCommandForFgCommand(); // for foreground command
     bool isStopped();
-    JobEntry(int id, Command* command, bool stopped_flag);
+    JobEntry(int id,int pid, Command* command, bool stopped_flag);
     ~JobEntry();
     bool operator==(JobEntry jobEntry)//by job entry. we dont care about the command actual things.
     {
@@ -143,12 +144,12 @@ public:
   ~JobsList();
   int getMaxJobId();
   JobEntry* find_by_jobid(int id,enum FINDSTATUS* find_status);
-  void addJob(Command* cmd, bool isStopped = false);
+  void addJob(Command* cmd,pid_t job_pid, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
   JobEntry * getJobById(int ,enum FINDSTATUS* findstatus);//findstatus should be sent as empty POINTER!!!
-  void removeJobById(int jobId);
+  bool removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);
   // TODO: Add extra methods or modify exisitng ones as needed

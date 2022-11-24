@@ -29,6 +29,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #endif
 
 #define NO_PID_NUMBER 0
+#define NO_ID_NUMBER -1
 enum{THE_CHARACTER_IS_NOT_A_NUMBER=-1,JOB_LIST_IS_EMPTY=0};
 
 //todo for ziv - implement joblist correctly and work on background stuff.(check valgrind)
@@ -150,8 +151,13 @@ int char_to_int(const char* str)
 
 
 /**Command class implementation**/
-Command::Command(const char *cmd_line) {
-    this->arg_num = _parseCommandLine(cmd_line, this->arg);
+Command::Command(const char* cmd_line) {
+    strcpy(this->cmd_line, cmd_line);
+
+    char temp[COMMAND_MAX_LENGTH];
+    strcpy(temp, cmd_line);
+    _removeBackgroundSign(temp); //todo check if cause problems
+    this->arg_num = _parseCommandLine(temp, this->arg);
 //    this->is_pipe_command= check_if_pipe_command(cmd_line);
 //    this->is_redirection_command= check_if_redirection_command(cmd_line);
     //assert(!(is_redirection_command&&is_pipe_command));
@@ -159,9 +165,8 @@ Command::Command(const char *cmd_line) {
  //   {
         //why am i doing this like that- in the wet , it is mentioened that pipe commands IGNORE & and cannot be background tasks...
         this->is_background = _isBackgroundCommand(cmd_line);
-        strcpy(this->cmd_line, cmd_line);
-        _removeBackgroundSign(this->cmd_line);
-  //  }
+    this->job_list = SmallShell::getInstance().getJobsList();
+    //  }
     /*else{
         strcpy(this->cmd_line,cmd_line);
         this->is_background=false;
@@ -181,10 +186,7 @@ ostream &operator<<(ostream &os, Command &command) {
 /**Command class implementation**/
 
 /**BuiltInCommand class implementation**/
-BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line)
-{
-    this->job_list=SmallShell::getInstance().getJobsList();
-}
+BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line){}
 /**BuiltInCommand class implementation**/
 
 /**ExternalCommand class implementation**/
@@ -195,10 +197,10 @@ BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line)
 
 
 /**JobEntry methods implementation**/
-JobEntry::JobEntry(int id, Command *command, bool stopped_flag) {
+JobEntry::JobEntry(int id,pid_t pid, Command *command, bool stopped_flag) {
     this->id = id;
-    this->command=new Command("");
-    memcpy(this->command, command, sizeof(*command));
+    this->pid = pid;
+    this->command = command;
     this->insertion_time = time(NULL);
     this->stopped_flag = stopped_flag;
 }
@@ -226,7 +228,7 @@ JobEntry* JobsList::find_by_jobid(int id,enum FINDSTATUS* find_status){
     return nullptr;
 }
 pid_t JobEntry::getJobPid() {
-    return getpid();
+    return pid;
 }
 
 Command *JobEntry::getCommand() {
@@ -237,7 +239,7 @@ bool JobEntry::isStopped() {
     return stopped_flag;
 }
 void JobEntry::printCommandForFgCommand() {
-    cout<<command<< " : " << this->getJobPid() << endl;
+    cout<< *command << " : " << this->getJobPid() << endl;
 }
 
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
@@ -263,10 +265,10 @@ JobsList::~JobsList() {
     }
 }
 
-void JobsList::addJob(Command *cmd, bool isStopped)
+void JobsList::addJob(Command *cmd, pid_t job_pid, bool isStopped)
 {
-    JobEntry* jobEntry=new JobEntry((this->curr_jobid_max==0)?  1 : this->getMaxJobId()+1
-            ,cmd,isStopped);//todo isStopped neccesary?
+    JobEntry* jobEntry = new JobEntry((this->curr_jobid_max==0)?  1 : this->getMaxJobId()+1
+            ,job_pid,cmd,isStopped);//todo isStopped neccesary?
     this->data.push_back(jobEntry);
     this->curr_jobid_max=getMaxJobId();
 }
@@ -285,12 +287,28 @@ void JobsList::killAllJobs() {
         //kill(,SIGKILL);
     }
 }
+bool isFinished(JobEntry *job)
+{
+    //cout << bool(waitpid(job->getJobPid(), nullptr, WNOHANG))<<endl;
+     (waitpid((*job).getJobPid(), nullptr, WNOHANG));
+    return true;
 
-void JobsList::removeFinishedJobs() {
-    std::cout<<"removeFinsihedJobs"<<std::endl;
-    for (JobEntry *job: data) {
+}
 
-        //remove if finished
+void JobsList::removeFinishedJobs()
+{
+    cout<< "in remove finished jobs"<<endl;
+    for(auto iterator = data.begin(); iterator != data.end(); )
+    {
+        int son_is_potent = waitpid((*iterator)->getJobPid(), nullptr, WNOHANG);
+        switch (son_is_potent) { // alive and strong, very powerful son very potent
+            case true:
+                data.erase(iterator);
+                break;
+            case false:
+                iterator++;
+                break;
+        }
     }
 }
 
@@ -299,19 +317,19 @@ JobEntry *JobsList::getJobById(int jobId,enum FINDSTATUS* findstatus) {
 
 }
 
-void JobsList::removeJobById(int jobId) {
+bool JobsList::removeJobById(int jobId) {
     /*todo finish removeJobById implementation
      * so the job will be remove from the list but not deleted!!*/
     FINDSTATUS* fd;
-    JobEntry* to_find= find_by_jobid(jobId,fd);
-    if(*fd==NOT_FOUND)
+    for(auto iterator = data.begin(); iterator != data.end();)
     {
-        cout<<"not found ,TODO"<<endl;
+        if((*iterator)->getJobId() == jobId)
+        {
+            data.erase(iterator);
+            return FOUND;
+        }
     }
-    if(*fd==FOUND)
-    {
-        cout<<"found, TODO"<<endl;
-    }
+    return NOT_FOUND;
 }
 
 JobEntry *JobsList::getLastJob(int *lastJobId) {
@@ -383,11 +401,18 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     bool is_cmd_pipe= false;
     bool is_cmd_redirection=false;
     is_cmd_pipe= check_if_pipe_command(cmd_line);
-    is_cmd_redirection= check_if_redirection_command(cmd_line);
+    is_cmd_redirection = check_if_redirection_command(cmd_line);
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
+
+    /** ignore the & sign **/
+    _removeBackgroundSign(const_cast<char*>(firstWord.c_str()));
+    firstWord = _trim(firstWord.c_str());
+    /** ignore the & sign **/
+
     assert(!(is_cmd_pipe&&is_cmd_redirection));//we allow only one "type" of command or none of them, but never both.
     //we first check if its pipe or redirection..always!
+
     if (is_cmd_pipe){
         return new PipeCommand(cmd_line);
     } else if(is_cmd_redirection) {
@@ -402,17 +427,15 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
         return new ChangeDirCommand(cmd_line);
     } else if (firstWord.compare("jobs") == 0) {
         return new JobsCommand(cmd_line);
-    }
-     else {
-        //home/student/Desktop/external_test_commands/ziv.o
+    }  else if (firstWord.compare("fg") == 0) {
+        return new ForegroundCommand(cmd_line);
+    }/*else if (firstWord.compare("bg") == 0) {
+        return new BackgroundCommand(cmd_line);
+    }else if(firstWord.compare("quit") == 0){
+        return new QuitCommand(cmd_line);
+    }*/else{
         return new ExternalCommand(cmd_line);
-    }/*
-  else if (firstWord.compare("showpid") == 0) {
-    return new ShowPidCommand(cmd_line);
-  }
-  else {
-    return new ExternalCommand(cmd_line);
-  }*/
+    }
     return nullptr;
 }
 
@@ -431,7 +454,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
 GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 
 void GetCurrDirCommand::execute() {
-    char *path =getcwd(NULL, 0);
+    char *path = getcwd(NULL, 0);
 
     cout << path << std::endl;
     free((void *) path);
@@ -519,26 +542,38 @@ void ChangeDirCommand::execute() {
 ExternalCommand::ExternalCommand(const char *cmd_line) : Command(cmd_line) {}
 
 void ExternalCommand::execute() {
-    bool is_background = _isBackgroundCommand(cmd_line);
-    if (is_background) {
-        _removeBackgroundSign(cmd_line);
-    }
 
     //todo check if the command not empty
-    //todo insert to the job list!
+    //todo think whether we need to insert a fg process to the job list!
 
-    pid_t pid = fork();
-    if (pid == 0) // my son
+    pid_t child_pid = fork();
+    if (child_pid == 0) // my son
     {
         if (isExternalComplex(string(cmd_line))) {
-            DO_SYS(execl("/bin/bash", "bash", "-c", cmd_line, nullptr));
-        } else {
+            DO_SYS(execl("/bin/bash", "bash", "-c",/* “complex-external-command” need to be added by the instructions*/ cmd_line, nullptr));
+        } else /*if(the first argument start with ./)*/ {
             DO_SYS(execv(this->arg[0], this->arg));
+            /*else
+             * {
+             * take arg[0]
+             * command = "/bin/"+arg[0]+"/"
+             * execv(, this->arg)
+             * */
         }
-    } else // fatha'
+    } else // fatha' 
     {
-        DO_SYS(waitpid(pid, NULL, 0));
+        switch (this->is_background) {
+            case true:
+                this->job_list->addJob(this, child_pid);
+                break;
+            case false:
+                SmallShell::getInstance().setForegroundPid(child_pid);
+                DO_SYS(waitpid(child_pid, NULL, 0));
+                SmallShell::getInstance().setForegroundPid(NO_PID_NUMBER);
+                break;
+        }
     }
+
 }
 
 // todo test the jobs command
@@ -558,10 +593,9 @@ void ForegroundCommand::execute()
     this->job_list->removeFinishedJobs();
     FINDSTATUS* status;
 
-
     /*find the job in the job list, remove it and print it*/
     JobEntry* job_to_front;
-    int job_id = -1;
+    int job_id = NO_ID_NUMBER;
     if(arg_num<2) {
         job_id = job_list->getMaxJobId();
     }
@@ -577,9 +611,9 @@ void ForegroundCommand::execute()
     job_to_front = job_list->getJobById(job_id,status);
 
     //todo check status?
-    //todo finish removeJobById implementation
-    job_list->removeJobById(job_id);
     job_to_front->printCommandForFgCommand();
+    bool found_and_removed = job_list->removeJobById(job_id);
+    //todo add if found_and_removed
     /*----------------------------------------------------*/
 
 
