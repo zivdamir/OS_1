@@ -29,6 +29,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #endif
 
 #define NO_PID_NUMBER 0
+enum{THE_CHARACTER_IS_NOT_A_NUMBER=-1,JOB_LIST_IS_EMPTY=0};
 
 //todo for ziv - implement joblist correctly and work on background stuff.(check valgrind)
 string _ltrim(const std::string &s) {
@@ -92,6 +93,44 @@ bool isExternalComplex(string cmd_line) {
     return false;
 }
 /**external command support**/
+bool check_if_redirection_command(const char* cmd_line)
+//todo maybe add indicator to which one of the redirection symbols we found...for this momemnt we only test if we can spot it..
+{
+    int arg_count=0;
+    char* cmd_args[COMMAND_MAX_ARGS];
+    arg_count= _parseCommandLine(cmd_line,cmd_args);
+    bool is_redirection=false;
+    for(int i=0;i<arg_count;i++)
+    {
+        if(strcmp(cmd_args[i],">")==0 || strcmp(cmd_args[i],">>")==0)
+        {
+            is_redirection=true;
+            break;
+        }
+    }
+    for (int i = 0; i < arg_count; i++) {
+        free(cmd_args[i]);
+    }
+    return is_redirection;
+}
+bool check_if_pipe_command(const char* cmd_line)
+{
+    int arg_count=0;
+    char* cmd_args[COMMAND_MAX_ARGS];
+    arg_count= _parseCommandLine(cmd_line,cmd_args);
+    bool is_pipe=false;
+    for(int i=0;i<arg_count;i++) {
+        if (strcmp(cmd_args[i], "|") == 0 || strcmp(cmd_args[i], "|&") == 0)
+        {
+            is_pipe=true;
+            break;
+        }
+    }
+    for (int i = 0; i < arg_count; i++) {
+        free(cmd_args[i]);
+    }
+    return is_pipe;
+}
 
 /* support function for fgcommand*/
 int char_to_int(const char* str)
@@ -100,7 +139,7 @@ int char_to_int(const char* str)
     int i = 0;
     while(i<80 && str[i] !='\0')
     {
-        if(str[i] < '0' || str[i] > '9') return -1; //val[i] isn't a number..
+        if(str[i] < '0' || str[i] > '9') return THE_CHARACTER_IS_NOT_A_NUMBER; //val[i] isn't a number..
         value *= 10;
         value += str[i] - 48;
     }
@@ -112,8 +151,21 @@ int char_to_int(const char* str)
 
 /**Command class implementation**/
 Command::Command(const char *cmd_line) {
-    strcpy(this->cmd_line, cmd_line);
     this->arg_num = _parseCommandLine(cmd_line, this->arg);
+//    this->is_pipe_command= check_if_pipe_command(cmd_line);
+//    this->is_redirection_command= check_if_redirection_command(cmd_line);
+    //assert(!(is_redirection_command&&is_pipe_command));
+   // if(!(is_pipe_command || is_redirection_command)) //if not pipe or redirection, check for bg command
+ //   {
+        //why am i doing this like that- in the wet , it is mentioened that pipe commands IGNORE & and cannot be background tasks...
+        this->is_background = _isBackgroundCommand(cmd_line);
+        strcpy(this->cmd_line, cmd_line);
+        _removeBackgroundSign(this->cmd_line);
+  //  }
+    /*else{
+        strcpy(this->cmd_line,cmd_line);
+        this->is_background=false;
+    }*/
 }
 
 Command::~Command() {
@@ -190,6 +242,7 @@ void JobEntry::printCommandForFgCommand() {
 
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
     string stopped=(jobEntry.stopped_flag)? "(stopped)":"";
+
     //[<job-id>]<-check <command> : <process id> <seconds elapsed> (stopped)
             os <<"["<< jobEntry.id <<"]"<< " " << *jobEntry.command << " : " << jobEntry.getJobPid() << " "
                << difftime(jobEntry.insertion_time,time(NULL))<<" secs"
@@ -226,13 +279,15 @@ void JobsList::printJobsList() {
 }
 
 void JobsList::killAllJobs() {
+    std::cout<<"killAllJobs"<<std::endl;
     for (JobEntry *job: data) {
 
-        //kill(job,SIGKILL);
+        //kill(,SIGKILL);
     }
 }
 
 void JobsList::removeFinishedJobs() {
+    std::cout<<"removeFinsihedJobs"<<std::endl;
     for (JobEntry *job: data) {
 
         //remove if finished
@@ -272,7 +327,7 @@ void JobsList::sort_JobsList() {
 }
 
 int JobsList::getMaxJobId() {
-    int max_job_id=0;
+    int max_job_id=JOB_LIST_IS_EMPTY;
     for(JobEntry* job:this->data)
     {
         max_job_id=max(max_job_id,job->getJobId());
@@ -324,10 +379,20 @@ void SmallShell::setForegroundPid(pid_t new_fg_pid) {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 **/
 Command *SmallShell::CreateCommand(const char *cmd_line) {
-
+    //todo check if command is pipe or redirection or none...
+    bool is_cmd_pipe= false;
+    bool is_cmd_redirection=false;
+    is_cmd_pipe= check_if_pipe_command(cmd_line);
+    is_cmd_redirection= check_if_redirection_command(cmd_line);
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-    if (firstWord.compare("chprompt") == 0) {
+    assert(!(is_cmd_pipe&&is_cmd_redirection));//we allow only one "type" of command or none of them, but never both.
+    //we first check if its pipe or redirection..always!
+    if (is_cmd_pipe){
+        return new PipeCommand(cmd_line);
+    } else if(is_cmd_redirection) {
+        return new RedirectionCommand(cmd_line);
+    }else if (firstWord.compare("chprompt") == 0) {
         return new ChpromptCommand(cmd_line);
     } else if (firstWord.compare("pwd") == 0) {
         return new GetCurrDirCommand(cmd_line);
@@ -337,7 +402,8 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
         return new ChangeDirCommand(cmd_line);
     } else if (firstWord.compare("jobs") == 0) {
         return new JobsCommand(cmd_line);
-    } else {
+    }
+     else {
         //home/student/Desktop/external_test_commands/ziv.o
         return new ExternalCommand(cmd_line);
     }/*
@@ -491,10 +557,25 @@ void ForegroundCommand::execute()
     //todo check char_to_int  function
     this->job_list->removeFinishedJobs();
     FINDSTATUS* status;
-    int job_id = char_to_int(arg[1]);
+
 
     /*find the job in the job list, remove it and print it*/
-    JobEntry* job_to_front = job_list->getJobById(job_id,status);
+    JobEntry* job_to_front;
+    int job_id = -1;
+    if(arg_num<2) {
+        job_id = job_list->getMaxJobId();
+    }
+    else
+    {
+        job_id = char_to_int(arg[1]);
+    }
+    /*todo add
+     * if job_id=JOB_LIST_IS_EMPTY then error
+     * if job_id=THE_CHARACTER_IS_NOT_A_NUMBER then error
+     * */
+
+    job_to_front = job_list->getJobById(job_id,status);
+
     //todo check status?
     //todo finish removeJobById implementation
     job_list->removeJobById(job_id);
@@ -509,7 +590,26 @@ void ForegroundCommand::execute()
     /*----------------------------------------------------*/
 }
 
+BackgroundCommand::BackgroundCommand(const char* cmd_line): BuiltInCommand(cmd_line){}
+void BackgroundCommand::execute(){}
 
 
+RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line) {
+    std::cout<<"redirection constructor"<<std::endl;
+    assert(false);
+}
 
+void RedirectionCommand::execute() {
+    std::cout<<"redirection execute"<<std::endl;
+    assert(false);
+}
 
+PipeCommand::PipeCommand(const char *cmd_line) : Command(cmd_line) {
+    std::cout<<"pipe constructor"<<std::endl;
+    assert(false);
+}
+
+void PipeCommand::execute() {
+    std::cout<<"pipe execute"<<std::endl;
+    assert(false);
+}

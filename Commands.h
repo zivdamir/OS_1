@@ -17,9 +17,12 @@ enum FINDSTATUS{FOUND=0,NOT_FOUND=1,FOUND_NOT_STOPPED=2};//serves as status for 
 class Command {
 // TODO: Add your data members
 protected:
+    bool is_pipe_command;
+    bool is_redirection_command;
      char cmd_line[80];
     char* arg[COMMAND_MAX_ARGS];
     int arg_num;
+    bool is_background;
  public:
   Command(const char* cmd_line);
   virtual ~Command();
@@ -178,7 +181,7 @@ class ForegroundCommand : public BuiltInCommand {
 class BackgroundCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  BackgroundCommand(const char* cmd_line, JobsList* jobs);
+  BackgroundCommand(const char* cmd_line);
   virtual ~BackgroundCommand() {}
   void execute() override;
 };

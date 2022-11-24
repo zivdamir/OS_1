@@ -6,8 +6,11 @@
 using namespace std;
 
 void ctrlZHandler(int sig_num) {
-	// TODO: Add your implementation
-  printf("no ctrlZHandler implemented\n");
+    // TODO: Add your implementation
+    cout << "smash: got ctrl-C" << endl;
+    SmallShell &instance = SmallShell::getInstance();
+    pid_t fg_pid = instance.getForegroundPid();
+    if (fg_pid){}
 }
 
 void ctrlCHandler(int sig_num) {
