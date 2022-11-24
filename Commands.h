@@ -17,6 +17,8 @@ enum FINDSTATUS{FOUND=0,NOT_FOUND=1,FOUND_NOT_STOPPED=2};//serves as status for 
 class Command {
 // TODO: Add your data members
 protected:
+    bool is_pipe_command;
+    bool is_redirection_command;
      char cmd_line[80];
     char* arg[COMMAND_MAX_ARGS];
     int arg_num;

@@ -93,6 +93,44 @@ bool isExternalComplex(string cmd_line) {
     return false;
 }
 /**external command support**/
+bool check_if_redirection_command(const char* cmd_line)
+//todo maybe add indicator to which one of the redirection symbols we found...for this momemnt we only test if we can spot it..
+{
+    int arg_count=0;
+    char* cmd_args[COMMAND_MAX_ARGS];
+    arg_count= _parseCommandLine(cmd_line,cmd_args);
+    bool is_redirection=false;
+    for(int i=0;i<arg_count;i++)
+    {
+        if(strcmp(cmd_args[i],">")==0 || strcmp(cmd_args[i],">>")==0)
+        {
+            is_redirection=true;
+            break;
+        }
+    }
+    for (int i = 0; i < arg_count; i++) {
+        free(cmd_args[i]);
+    }
+    return is_redirection;
+}
+bool check_if_pipe_command(const char* cmd_line)
+{
+    int arg_count=0;
+    char* cmd_args[COMMAND_MAX_ARGS];
+    arg_count= _parseCommandLine(cmd_line,cmd_args);
+    bool is_pipe=false;
+    for(int i=0;i<arg_count;i++) {
+        if (strcmp(cmd_args[i], "|") == 0 || strcmp(cmd_args[i], "|&") == 0)
+        {
+            is_pipe=true;
+            break;
+        }
+    }
+    for (int i = 0; i < arg_count; i++) {
+        free(cmd_args[i]);
+    }
+    return is_pipe;
+}
 
 /* support function for fgcommand*/
 int char_to_int(const char* str)
@@ -114,9 +152,20 @@ int char_to_int(const char* str)
 /**Command class implementation**/
 Command::Command(const char *cmd_line) {
     this->arg_num = _parseCommandLine(cmd_line, this->arg);
-    this->is_background = _isBackgroundCommand(cmd_line);
-    strcpy(this->cmd_line, cmd_line);
-    _removeBackgroundSign(this->cmd_line);
+//    this->is_pipe_command= check_if_pipe_command(cmd_line);
+//    this->is_redirection_command= check_if_redirection_command(cmd_line);
+    //assert(!(is_redirection_command&&is_pipe_command));
+   // if(!(is_pipe_command || is_redirection_command)) //if not pipe or redirection, check for bg command
+ //   {
+        //why am i doing this like that- in the wet , it is mentioened that pipe commands IGNORE & and cannot be background tasks...
+        this->is_background = _isBackgroundCommand(cmd_line);
+        strcpy(this->cmd_line, cmd_line);
+        _removeBackgroundSign(this->cmd_line);
+  //  }
+    /*else{
+        strcpy(this->cmd_line,cmd_line);
+        this->is_background=false;
+    }*/
 }
 
 Command::~Command() {
@@ -193,6 +242,7 @@ void JobEntry::printCommandForFgCommand() {
 
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
     string stopped=(jobEntry.stopped_flag)? "(stopped)":"";
+
     //[<job-id>]<-check <command> : <process id> <seconds elapsed> (stopped)
             os <<"["<< jobEntry.id <<"]"<< " " << *jobEntry.command << " : " << jobEntry.getJobPid() << " "
                << difftime(jobEntry.insertion_time,time(NULL))<<" secs"
@@ -229,13 +279,15 @@ void JobsList::printJobsList() {
 }
 
 void JobsList::killAllJobs() {
+    std::cout<<"killAllJobs"<<std::endl;
     for (JobEntry *job: data) {
 
-        //kill(job,SIGKILL);
+        //kill(,SIGKILL);
     }
 }
 
 void JobsList::removeFinishedJobs() {
+    std::cout<<"removeFinsihedJobs"<<std::endl;
     for (JobEntry *job: data) {
 
         //remove if finished
@@ -327,10 +379,20 @@ void SmallShell::setForegroundPid(pid_t new_fg_pid) {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 **/
 Command *SmallShell::CreateCommand(const char *cmd_line) {
-
+    //todo check if command is pipe or redirection or none...
+    bool is_cmd_pipe= false;
+    bool is_cmd_redirection=false;
+    is_cmd_pipe= check_if_pipe_command(cmd_line);
+    is_cmd_redirection= check_if_redirection_command(cmd_line);
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-    if (firstWord.compare("chprompt") == 0) {
+    assert(!(is_cmd_pipe&&is_cmd_redirection));//we allow only one "type" of command or none of them, but never both.
+    //we first check if its pipe or redirection..always!
+    if (is_cmd_pipe){
+        return new PipeCommand(cmd_line);
+    } else if(is_cmd_redirection) {
+        return new RedirectionCommand(cmd_line);
+    }else if (firstWord.compare("chprompt") == 0) {
         return new ChpromptCommand(cmd_line);
     } else if (firstWord.compare("pwd") == 0) {
         return new GetCurrDirCommand(cmd_line);
@@ -340,7 +402,8 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
         return new ChangeDirCommand(cmd_line);
     } else if (firstWord.compare("jobs") == 0) {
         return new JobsCommand(cmd_line);
-    } else {
+    }
+     else {
         //home/student/Desktop/external_test_commands/ziv.o
         return new ExternalCommand(cmd_line);
     }/*
@@ -531,5 +594,22 @@ BackgroundCommand::BackgroundCommand(const char* cmd_line): BuiltInCommand(cmd_l
 void BackgroundCommand::execute(){}
 
 
+RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line) {
+    std::cout<<"redirection constructor"<<std::endl;
+    assert(false);
+}
 
+void RedirectionCommand::execute() {
+    std::cout<<"redirection execute"<<std::endl;
+    assert(false);
+}
 
+PipeCommand::PipeCommand(const char *cmd_line) : Command(cmd_line) {
+    std::cout<<"pipe constructor"<<std::endl;
+    assert(false);
+}
+
+void PipeCommand::execute() {
+    std::cout<<"pipe execute"<<std::endl;
+    assert(false);
+}
