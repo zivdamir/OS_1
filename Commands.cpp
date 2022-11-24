@@ -30,7 +30,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 
 #define NO_PID_NUMBER 0
 #define NO_ID_NUMBER -1
-enum{THE_CHARACTER_IS_NOT_A_NUMBER=-1,JOB_LIST_IS_EMPTY=0};
+enum PARAMSTATUS{NO_GOOD=0,GOOD=1};
 
 //todo for ziv - implement joblist correctly and work on background stuff.(check valgrind)
 string _ltrim(const std::string &s) {
@@ -134,15 +134,15 @@ bool check_if_pipe_command(const char* cmd_line)
 }
 
 /* support function for fgcommand*/
+/*the function assums that the argument is a number*/
 int char_to_int(const char* str)
 {
-    int value;
-    int i = 0;
-    while(i<80 && str[i] !='\0')
+    int value = 0;
+    string temp = str;
+    for(char letter: temp)
     {
-        if(str[i] < '0' || str[i] > '9') return THE_CHARACTER_IS_NOT_A_NUMBER; //val[i] isn't a number..
         value *= 10;
-        value += str[i] - 48;
+        value += letter - 48;
     }
     return value;
 }
@@ -213,18 +213,25 @@ int JobEntry::getJobId() {
     return id;
 }
 
-JobEntry* JobsList::find_by_jobid(int id,enum FINDSTATUS* find_status){
-    /*find_status - to be returned(our function mallocs it , so we should give empty pointers to it*/
-    find_status=(enum FINDSTATUS*)malloc(sizeof(*find_status));
-    for(JobEntry* job:this->data)
-    {
-        if(job->getJobId()==id)
-        {
-            *find_status=FOUND;
-            return job;
+JobEntry* JobsList::find_by_job_id(int id,enum FINDSTATUS& find_status){
+    /*find_status - to be returned(our function mallocs it , so we should give empty pointers to it
+     * ziv i you read this i think this line is pure shit:
+     * find_status=(enum FINDSTATUS*)malloc(sizeof(*find_status));
+     * your obedient servant,
+     * L.R.
+    */
+    if(this->data.size()) {
+        for (JobEntry *job: this->data) {
+            if (job->getJobId() == id) {
+                find_status = FOUND;
+                return job;
+            }
         }
+        find_status = NOT_FOUND;
     }
-    *find_status=NOT_FOUND;
+    else {
+       find_status =  JOB_LIST_IS_EMPTY;
+    }
     return nullptr;
 }
 pid_t JobEntry::getJobPid() {
@@ -267,10 +274,10 @@ JobsList::~JobsList() {
 
 void JobsList::addJob(Command *cmd, pid_t job_pid, bool isStopped)
 {
-    JobEntry* jobEntry = new JobEntry((this->curr_jobid_max==0)?  1 : this->getMaxJobId()+1
+    JobEntry* jobEntry = new JobEntry((this->curr_job_id_max==0)?  1 : this->getMaxJobId()+1
             ,job_pid,cmd,isStopped);//todo isStopped neccesary?
     this->data.push_back(jobEntry);
-    this->curr_jobid_max=getMaxJobId();
+    this->curr_job_id_max=getMaxJobId();
 }
 
 void JobsList::printJobsList() {
@@ -297,7 +304,6 @@ bool isFinished(JobEntry *job)
 
 void JobsList::removeFinishedJobs()
 {
-    cout<< "in remove finished jobs"<<endl;
     for(auto iterator = data.begin(); iterator != data.end(); )
     {
         int son_is_potent = waitpid((*iterator)->getJobPid(), nullptr, WNOHANG);
@@ -312,24 +318,21 @@ void JobsList::removeFinishedJobs()
     }
 }
 
-JobEntry *JobsList::getJobById(int jobId,enum FINDSTATUS* findstatus) {
-    JobEntry* jobEntry= find_by_jobid(jobId,findstatus);
+JobEntry *JobsList::getJobById(int jobId,enum FINDSTATUS& find_status) {
+    JobEntry* jobEntry = find_by_job_id(jobId,find_status);
 
 }
 
-bool JobsList::removeJobById(int jobId) {
+void JobsList::removeJobById(int jobId) {
     /*todo finish removeJobById implementation
      * so the job will be remove from the list but not deleted!!*/
-    FINDSTATUS* fd;
     for(auto iterator = data.begin(); iterator != data.end();)
     {
         if((*iterator)->getJobId() == jobId)
         {
             data.erase(iterator);
-            return FOUND;
         }
     }
-    return NOT_FOUND;
 }
 
 JobEntry *JobsList::getLastJob(int *lastJobId) {
@@ -400,7 +403,7 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
     //todo check if command is pipe or redirection or none...
     bool is_cmd_pipe= false;
     bool is_cmd_redirection=false;
-    is_cmd_pipe= check_if_pipe_command(cmd_line);
+    is_cmd_pipe = check_if_pipe_command(cmd_line);
     is_cmd_redirection = check_if_redirection_command(cmd_line);
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
@@ -584,36 +587,61 @@ void JobsCommand::execute() {
     this->job_list->removeFinishedJobs();
     this->job_list->printJobsList();
 }
+
+PARAMSTATUS checkFgAndBgCommandParams(char** arg,int arg_num)
+{
+    if(arg_num>2) return NO_GOOD;
+    if(arg_num==2)
+    {
+        string number_param = arg[1];
+        for(char letter: number_param)
+        {
+            if (letter < '0' || letter > '9') {
+                return NO_GOOD; //number_param[i] isn't a number..
+            }
+        }
+    }
+    return GOOD;
+}
+
 // todo test the foreground command
+// todo check which errors occure first
 ForegroundCommand::ForegroundCommand(const char* cmd_line): BuiltInCommand(cmd_line){}
 void ForegroundCommand::execute()
 {
-    //todo check error cases and treat them
-    //todo check char_to_int  function
+    PARAMSTATUS param_status = checkFgAndBgCommandParams(arg,arg_num);
+    if(param_status==NO_GOOD)
+    {
+        cout << "smash error: fg: invalid arguments" << endl;
+        return;
+    }
+
     this->job_list->removeFinishedJobs();
-    FINDSTATUS* status;
 
     /*find the job in the job list, remove it and print it*/
     JobEntry* job_to_front;
     int job_id = NO_ID_NUMBER;
     if(arg_num<2) {
-        job_id = job_list->getMaxJobId();
+        job_id = job_list->getMaxJobId(); // arg_num == 1
     }
     else
     {
-        job_id = char_to_int(arg[1]);
+        job_id = char_to_int(arg[1]);// arg_num == 2
     }
-    /*todo add
-     * if job_id=JOB_LIST_IS_EMPTY then error
-     * if job_id=THE_CHARACTER_IS_NOT_A_NUMBER then error
-     * */
 
+    FINDSTATUS status;
     job_to_front = job_list->getJobById(job_id,status);
+    switch (status) {
+        case NOT_FOUND:
+            cout << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            return;
+        case JOB_LIST_IS_EMPTY:
+            cout << "smash error: fg: jobs list is empty" << endl;
+            return;
+    }
 
-    //todo check status?
     job_to_front->printCommandForFgCommand();
-    bool found_and_removed = job_list->removeJobById(job_id);
-    //todo add if found_and_removed
+    job_list->removeJobById(job_id);
     /*----------------------------------------------------*/
 
 
@@ -625,7 +653,50 @@ void ForegroundCommand::execute()
 }
 
 BackgroundCommand::BackgroundCommand(const char* cmd_line): BuiltInCommand(cmd_line){}
-void BackgroundCommand::execute(){}
+void BackgroundCommand::execute()
+{
+    PARAMSTATUS param_status = checkFgAndBgCommandParams(arg,arg_num);
+    if(param_status==NO_GOOD)
+    {
+        cout << "smash error: fg: invalid arguments" << endl;
+        return;
+    }
+
+    this->job_list->removeFinishedJobs();
+
+    /*find the job in the job list, remove it and print it*/
+    JobEntry* job_to_front;
+    int job_id = NO_ID_NUMBER;
+    if(arg_num<2) {
+        job_id = job_list->getMaxJobId(); // arg_num == 1
+    }
+    else
+    {
+        job_id = char_to_int(arg[1]);// arg_num == 2
+    }
+
+    FINDSTATUS status;
+    job_to_front = job_list->getJobById(job_id,status);
+    switch (status) {
+        case NOT_FOUND:
+            cout << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            return;
+        case JOB_LIST_IS_EMPTY:
+            cout << "smash error: fg: jobs list is empty" << endl;
+            return;
+    }
+
+    job_to_front->printCommandForFgCommand();
+    job_list->removeJobById(job_id);
+    /*----------------------------------------------------*/
+
+
+    /*tell the process to continue and then wait for it*/
+    pid_t job_pid = job_to_front->getJobPid();
+    kill(job_pid,SIGCONT);
+    waitpid(job_pid,NULL,0);
+    /*----------------------------------------------------*/
+}
 
 
 RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line) {

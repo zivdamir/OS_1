@@ -14,7 +14,7 @@
 #define COMMAND_MAX_LENGTH (80)
 using std::string;
 using std::ostream;
-enum FINDSTATUS{NOT_FOUND=0,FOUND=1,FOUND_NOT_STOPPED=2};//serves as status for find method.
+enum FINDSTATUS{JOB_LIST_IS_EMPTY=-1,NOT_FOUND=0,FOUND=1,FOUND_NOT_STOPPED=2};//serves as status for find method.
 class JobsList;
 class Command {
 // TODO: Add your data members
@@ -137,19 +137,19 @@ class JobsList {
 private:
  // TODO: Add your data members
  std::vector<JobEntry*> data;
- int curr_jobid_max=0;//todo implement ziv
+ int curr_job_id_max = 0;//todo implement ziv
 public:
   JobsList();
   void sort_JobsList();
   ~JobsList();
   int getMaxJobId();
-  JobEntry* find_by_jobid(int id,enum FINDSTATUS* find_status);
+  JobEntry* find_by_job_id(int id,enum FINDSTATUS& find_status);
   void addJob(Command* cmd,pid_t job_pid, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
-  JobEntry * getJobById(int ,enum FINDSTATUS* findstatus);//findstatus should be sent as empty POINTER!!!
-  bool removeJobById(int jobId);
+  JobEntry * getJobById(int ,enum FINDSTATUS& find_status);//findstatus should be sent as empty POINTER!!!
+  void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);
   // TODO: Add extra methods or modify exisitng ones as needed
