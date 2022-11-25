@@ -6,9 +6,6 @@
 #include "signals.h"
 #include "assert.h"
 
-#define NO_PID_NUMBER 0
-#define NO_ID_NUMBER -1
-
 int main(int argc, char* argv[]) {
     //testing for joblist
     // JobsList job_list=JobsList();

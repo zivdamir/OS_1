@@ -12,6 +12,10 @@
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 #define COMMAND_MAX_LENGTH (80)
+
+#define NO_PID_NUMBER 0
+#define NO_ID_NUMBER -1
+
 using std::string;
 using std::ostream;
 enum FINDSTATUS{NOT_FOUND=0,FOUND=1};//serves as status for find method.
