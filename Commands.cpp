@@ -329,8 +329,8 @@ void JobsList::removeJobById(int jobId) {
 
 int getLastStoppedJobId()
 {
-    int last_stopped_job_id=NO_ID_NUMBER;
-    int 
+  /*  int last_stopped_job_id=NO_ID_NUMBER;
+    int
     for(JobEntry* job:this->data)
     {
         if(last_stopped_job_id<job->getJobStoppingTime())
@@ -340,7 +340,7 @@ int getLastStoppedJobId()
 
         last_stopped_job_id=max(last_stopped_job_id,job->getJobStoppingTime());
     }
-    return max_job_id;
+    return max_job_id;*/
 }
 
 
@@ -675,7 +675,7 @@ void BackgroundCommand::execute()
     int job_id = NO_ID_NUMBER;
     FINDSTATUS status;
     if(arg_num<2) {
-        this->job_list->getLastStoppedJobId(); // arg_num=1
+        //this->job_list->getLastStoppedJobId(); // arg_num=1
         stopped_job = job_list->getJobById(job_id,status);
         if(status==NOT_FOUND) {
             cout << "smash error: bg: there is no stopped jobs to resume" << endl;
