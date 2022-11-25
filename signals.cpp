@@ -7,23 +7,58 @@ using namespace std;
 
 void ctrlZHandler(int sig_num) {
     // TODO: Add your implementation
-    cout << "smash: got ctrl-C" << endl;
+    /*
+    cout << "smash: got ctrl-Z" << endl;
     SmallShell &instance = SmallShell::getInstance();
-    pid_t fg_pid = instance.getForegroundPid();
-    if (fg_pid==NO){}
+    JobEntry* Fg_Job = instance.getFgJob();
+    if (Fg_Job==nullptr)
+    {
+        kill(Fg_Job->getJobPid(),SIGSTOP);
+        cout<< "smash: process "<< Fg_Job->getJobPid() <<" was killed" << endl;
+        JobsList* jobs_list = instance.getJobsList();
+        jobs_list->addJob(Fg_Job);
+        instance.setFgJob(nullptr);
+    }*/
 }
 
 void ctrlCHandler(int sig_num) {
   // TODO: Add your implementation
-    /*if(there is a process in the foreground)
+    /*cout << "smash: got ctrl-C" << endl;
+    SmallShell &instance = SmallShell::getInstance();
+    pid_t fg_pid = instance.getForegroundPid();
+    if (!(fg_pid==NO_PID_NUMBER))
     {
-        SmallShell& small_shell_inst = SmallShell::getInstance();
-        kill(small_shell_inst.foreground_pid, SIGKILL);
+        kill(fg_pid,SIGKILL);
+        cout<< "smash: process "<< fg_pid <<" was killed" << endl;
     }*/
-    printf("no ctrlCHandler implemented\n");
 }
 
 void alarmHandler(int sig_num) {
   // TODO: Add your implementation
 }
 
+/*
+#define IDENTICAL 0
+
+JobsList::printAllJobsForQuitCommand()
+{
+    for(JobEntry* job : data)
+    {
+        cout << job->getJobPid() << ": " << *(job->getCommand()) << endl;
+    }
+}
+
+
+QuitCommand::QuitCommand(const char *cmd_line) {};
+void QuitCommand::execute()
+{
+    if(arg_num>1 && strcmp(arg[1],"kill")==IDENTICAL)
+    {
+        job_list->removeFinishedJobs();
+        cout<< "smash: sending SIGKILL signal to "<< job_list->getListSize() <<" jobs:" <<endl;
+        job_list->printAllJobsForQuitCommand();
+        this->job_list->killAllJobs();
+    }
+
+}
+*/
