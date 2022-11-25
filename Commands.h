@@ -14,7 +14,7 @@
 #define COMMAND_MAX_LENGTH (80)
 using std::string;
 using std::ostream;
-enum FINDSTATUS{JOB_LIST_IS_EMPTY=-1,NOT_FOUND=0,FOUND=1,FOUND_NOT_STOPPED=2};//serves as status for find method.
+enum FINDSTATUS{NOT_FOUND=0,FOUND=1};//serves as status for find method.
 class JobsList;
 class Command {
 // TODO: Add your data members
@@ -152,6 +152,7 @@ public:
   void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);
+  int getLastStoppedJobId();
   // TODO: Add extra methods or modify exisitng ones as needed
 };
 

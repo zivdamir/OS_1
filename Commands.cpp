@@ -213,27 +213,6 @@ int JobEntry::getJobId() {
     return id;
 }
 
-JobEntry* JobsList::find_by_job_id(int id,enum FINDSTATUS& find_status){
-    /*find_status - to be returned(our function mallocs it , so we should give empty pointers to it
-     * ziv i you read this i think this line is pure shit:
-     * find_status=(enum FINDSTATUS*)malloc(sizeof(*find_status));
-     * your obedient servant,
-     * L.R.
-    */
-    if(this->data.size()) {
-        for (JobEntry *job: this->data) {
-            if (job->getJobId() == id) {
-                find_status = FOUND;
-                return job;
-            }
-        }
-        find_status = NOT_FOUND;
-    }
-    else {
-       find_status =  JOB_LIST_IS_EMPTY;
-    }
-    return nullptr;
-}
 pid_t JobEntry::getJobPid() {
     return pid;
 }
@@ -318,9 +297,22 @@ void JobsList::removeFinishedJobs()
     }
 }
 
-JobEntry *JobsList::getJobById(int jobId,enum FINDSTATUS& find_status) {
-    JobEntry* jobEntry = find_by_job_id(jobId,find_status);
-
+JobEntry *JobsList::getJobById(int job_id,enum FINDSTATUS& find_status) {
+    /*find_status - to be returned(our function mallocs it , so we should give empty pointers to it
+     * ziv i you read this i think this line is pure sh*t:
+     * find_status=(enum FINDSTATUS*)malloc(sizeof(*find_status));
+     * your obedient servant,
+     * L.R.
+    */
+    for (JobEntry *job: this->data) {
+        if (job->getJobId() == job_id)
+        {
+            find_status = FOUND;
+            return job;
+        }
+    }
+    find_status = NOT_FOUND;
+    return nullptr;
 }
 
 void JobsList::removeJobById(int jobId) {
@@ -335,6 +327,23 @@ void JobsList::removeJobById(int jobId) {
     }
 }
 
+int getLastStoppedJobId()
+{
+    int last_stopped_job_id=NO_ID_NUMBER;
+    int 
+    for(JobEntry* job:this->data)
+    {
+        if(last_stopped_job_id<job->getJobStoppingTime())
+        {
+
+        }
+
+        last_stopped_job_id=max(last_stopped_job_id,job->getJobStoppingTime());
+    }
+    return max_job_id;
+}
+
+
 JobEntry *JobsList::getLastJob(int *lastJobId) {
     //return findlast
 }
@@ -348,7 +357,7 @@ void JobsList::sort_JobsList() {
 }
 
 int JobsList::getMaxJobId() {
-    int max_job_id=JOB_LIST_IS_EMPTY;
+    int max_job_id=NO_ID_NUMBER;
     for(JobEntry* job:this->data)
     {
         max_job_id=max(max_job_id,job->getJobId());
@@ -621,29 +630,26 @@ void ForegroundCommand::execute()
     /*find the job in the job list, remove it and print it*/
     JobEntry* job_to_front;
     int job_id = NO_ID_NUMBER;
+    FINDSTATUS status;
     if(arg_num<2) {
         job_id = job_list->getMaxJobId(); // arg_num == 1
-    }
-    else
-    {
-        job_id = char_to_int(arg[1]);// arg_num == 2
-    }
-
-    FINDSTATUS status;
-    job_to_front = job_list->getJobById(job_id,status);
-    switch (status) {
-        case NOT_FOUND:
-            cout << "smash error: fg: job-id " << job_id << " does not exist" << endl;
-            return;
-        case JOB_LIST_IS_EMPTY:
+        job_to_front = job_list->getJobById(job_id,status);
+        if (status==NOT_FOUND) {
             cout << "smash error: fg: jobs list is empty" << endl;
             return;
+        }
     }
-
+    else {
+        job_id = char_to_int(arg[1]);// arg_num == 2
+        job_to_front = job_list->getJobById(job_id, status);
+        if (status==NOT_FOUND) {
+            cout << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            return;
+        }
+    }
     job_to_front->printCommandForFgCommand();
     job_list->removeJobById(job_id);
     /*----------------------------------------------------*/
-
 
     /*tell the process to continue and then wait for it*/
     pid_t job_pid = job_to_front->getJobPid();
@@ -664,35 +670,39 @@ void BackgroundCommand::execute()
 
     this->job_list->removeFinishedJobs();
 
-    /*find the job in the job list, remove it and print it*/
-    JobEntry* job_to_front;
+    /*find the job in the job list and print it*/
+    JobEntry* stopped_job;
     int job_id = NO_ID_NUMBER;
+    FINDSTATUS status;
     if(arg_num<2) {
-        job_id = job_list->getMaxJobId(); // arg_num == 1
+        this->job_list->getLastStoppedJobId(); // arg_num=1
+        stopped_job = job_list->getJobById(job_id,status);
+        if(status==NOT_FOUND) {
+            cout << "smash error: bg: there is no stopped jobs to resume" << endl;
+            return;
+        }
     }
     else
     {
         job_id = char_to_int(arg[1]);// arg_num == 2
-    }
-
-    FINDSTATUS status;
-    job_to_front = job_list->getJobById(job_id,status);
-    switch (status) {
-        case NOT_FOUND:
+        stopped_job = job_list->getJobById(job_id,status);
+        if(status==NOT_FOUND){
             cout << "smash error: fg: job-id " << job_id << " does not exist" << endl;
             return;
-        case JOB_LIST_IS_EMPTY:
-            cout << "smash error: fg: jobs list is empty" << endl;
+        }
+        else if(!(stopped_job->isStopped()))
+        {
+            cout << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
             return;
+        }
     }
 
-    job_to_front->printCommandForFgCommand();
-    job_list->removeJobById(job_id);
+    stopped_job->printCommandForFgCommand();
     /*----------------------------------------------------*/
 
 
     /*tell the process to continue and then wait for it*/
-    pid_t job_pid = job_to_front->getJobPid();
+    pid_t job_pid = stopped_job->getJobPid();
     kill(job_pid,SIGCONT);
     waitpid(job_pid,NULL,0);
     /*----------------------------------------------------*/
