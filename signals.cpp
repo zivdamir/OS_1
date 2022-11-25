@@ -40,14 +40,20 @@ void alarmHandler(int sig_num) {
 /*
 #define IDENTICAL 0
 
-JobsList::printAllJobsForQuitCommand()
+void JobsList::printAllJobsForQuitCommand()
 {
     for(JobEntry* job : data)
     {
         cout << job->getJobPid() << ": " << *(job->getCommand()) << endl;
     }
 }
-
+void JobsList::killAllJobs()
+{
+    for(JobEntry* job : data)
+    {
+    kill(job->pid,SIGKILL);
+    }
+}
 
 QuitCommand::QuitCommand(const char *cmd_line) {};
 void QuitCommand::execute()
@@ -59,6 +65,6 @@ void QuitCommand::execute()
         job_list->printAllJobsForQuitCommand();
         this->job_list->killAllJobs();
     }
-
+    exit(1); //what argument to send?
 }
 */
