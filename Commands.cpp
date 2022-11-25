@@ -28,8 +28,6 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 #define FUNC_EXIT()
 #endif
 
-#define NO_PID_NUMBER 0
-#define NO_ID_NUMBER -1
 enum PARAMSTATUS{NO_GOOD=0,GOOD=1};
 
 //todo for ziv - implement joblist correctly and work on background stuff.(check valgrind)
