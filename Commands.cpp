@@ -195,10 +195,11 @@ BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line){}
 
 
 /**JobEntry methods implementation**/
-JobEntry::JobEntry(int id,pid_t pid, Command *command, bool stopped_flag) {
+JobEntry::JobEntry(int id,pid_t pid,char cmd_line[80], Command *command, bool stopped_flag) {
     this->id = id;
     this->pid = pid;
     this->command = command;
+    strcpy(this->cmd_line,cmd_line);
     this->insertion_time = time(NULL);
     this->stopped_flag = stopped_flag;
 }
@@ -230,8 +231,8 @@ ostream & operator<<(ostream &os, JobEntry &jobEntry) {
     string stopped=(jobEntry.stopped_flag)? "(stopped)":"";
 
     //[<job-id>]<-check <command> : <process id> <seconds elapsed> (stopped)
-            os <<"["<< jobEntry.id <<"]"<< " " << *jobEntry.command << " : " << jobEntry.getJobPid() << " "
-               << difftime(jobEntry.insertion_time,time(NULL))<<" secs"
+            os <<"["<< jobEntry.id <<"]"<< " " << string(jobEntry.cmd_line) << " : " << jobEntry.getJobPid() << " "
+               << difftime(time(NULL),jobEntry.insertion_time)<<" secs"
                << " " << stopped;
     return os;
 }
@@ -249,10 +250,10 @@ JobsList::~JobsList() {
     }
 }
 
-void JobsList::addJob(Command *cmd, pid_t job_pid, bool isStopped)
+void JobsList::addJob(Command *cmd,char cmd_line[80], pid_t job_pid, bool isStopped)
 {
     JobEntry* jobEntry = new JobEntry((this->curr_job_id_max==0)?  1 : this->getMaxJobId()+1
-            ,job_pid,cmd,isStopped);//todo isStopped neccesary?
+            ,job_pid,cmd_line,cmd,isStopped);//todo isStopped neccesary?
     this->data.push_back(jobEntry);
     this->curr_job_id_max=getMaxJobId();
 }
@@ -281,18 +282,25 @@ bool isFinished(JobEntry *job)
 
 void JobsList::removeFinishedJobs()
 {
+    //printf("removing finished jobs.. \n");
     for(auto iterator = data.begin(); iterator != data.end(); )
     {
+        //printf("waiting for %d ... \n",(*iterator)->getJobPid());
         int son_is_potent = waitpid((*iterator)->getJobPid(), nullptr, WNOHANG);
-        switch (son_is_potent) { // alive and strong, very powerful son very potent
-            case true:
-                data.erase(iterator);
-                break;
-            case false:
+        //printf("wait was successfull\n");
+        if (son_is_potent) { // alive and strong, very powerful son very potent
+
+           // printf("earsing.. \n");
+            data.erase(iterator);
+          //  printf("erased \n");
+
+        }else{
+                //printf("iterator++ \n ");
                 iterator++;
-                break;
+
         }
     }
+    //printf("jobslist removed all fnished jobs succesfully \n");
 }
 
 JobEntry *JobsList::getJobById(int job_id,enum FINDSTATUS& find_status) {
@@ -561,23 +569,21 @@ void ExternalCommand::execute() {
     {
         if (isExternalComplex(string(cmd_line))) {
             DO_SYS(execl("/bin/bash", "bash", "-c",/* “complex-external-command” need to be added by the instructions*/ cmd_line, nullptr));
-        } else /*if(the first argument start with ./)*/ {
-            DO_SYS(execv(this->arg[0], this->arg));
-            /*else
-             * {
-             * take arg[0]
-             * command = "/bin/"+arg[0]+"/"
-             * execv(, this->arg)
-             * */
         }
-    } else // fatha' 
+    else /*if(the first argument start with ./)*/ {
+            DO_SYS(execvp(this->arg[0], this->arg));
+        }
+
+    }
+    else // fatha'
     {
         switch (this->is_background) {
             case true:
-                this->job_list->addJob(this, child_pid);
+                this->job_list->addJob(this,cmd_line, child_pid);
                 break;
             case false:
                 SmallShell::getInstance().setForegroundPid(child_pid);
+                printf("waiting \n");
                 DO_SYS(waitpid(child_pid, NULL, 0));
                 SmallShell::getInstance().setForegroundPid(NO_PID_NUMBER);
                 break;

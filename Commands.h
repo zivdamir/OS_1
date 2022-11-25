@@ -112,6 +112,7 @@ private:
     int id;
     pid_t pid;
     Command* command;
+    char cmd_line[80]={0};
     time_t insertion_time;
     time_t work_time;//for stopped jobs we will measure it as soon as we stop it(stopped jobs dont "work")
     bool stopped_flag;
@@ -121,7 +122,7 @@ public:
     Command* getCommand();
     void printCommandForFgCommand(); // for foreground command
     bool isStopped();
-    JobEntry(int id,int pid, Command* command, bool stopped_flag);
+    JobEntry(int id,int pid,char cmd_line[80], Command* command, bool stopped_flag);//later remove command*
     ~JobEntry();
     bool operator==(JobEntry jobEntry)//by job entry. we dont care about the command actual things.
     {
@@ -148,7 +149,7 @@ public:
   ~JobsList();
   int getMaxJobId();
   JobEntry* find_by_job_id(int id,enum FINDSTATUS& find_status);
-  void addJob(Command* cmd,pid_t job_pid, bool isStopped = false);
+  void addJob(Command* cmd,char cmd_line[80],pid_t job_pid, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
