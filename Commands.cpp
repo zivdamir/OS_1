@@ -174,9 +174,66 @@ string _ParseSecondPipeCommand(string cmd,int pos)
 
 	return a;
 }
-string _parseRedirectionCommand()
+string _parseFirstRedirectionCommand(string cmd,int * i)
 {
-	return "";
+	*i=0;
+	string a="";
+	for(char s: cmd)
+	{
+		if(s =='>')
+		{
+			break;
+		}
+		else{
+			a+=s;
+			(*i)++;
+		}
+	}
+	cout<<a<<"pos is"<<*i<<"char is"<<(cmd[*i])<<endl;
+	return a;
+}
+string  _ParseSecondRedirectionCommand(string cmd,int pos)
+{
+string a="";
+bool arrow_hit=false;
+bool scnd_arrow_hit=false;
+if(cmd[pos+1]!='>') //regular >
+{
+for (char ch: cmd) {
+
+	if (ch == '>') {
+		arrow_hit = true;
+		continue;
+		}
+		if (arrow_hit == true) {
+		a += ch;
+		}
+	}
+}
+	else{
+	for(char ch: cmd)
+	{
+	if(ch=='>'&& arrow_hit== false){
+	arrow_hit=true;
+	continue;
+	}
+	if(arrow_hit == true)
+	{
+		if(ch=='>')
+	{
+		cout<< "scnd arrow hitted"<<endl;
+		scnd_arrow_hit=true;
+		continue;
+	}
+	}
+	if(scnd_arrow_hit)
+	{
+	a+=ch;
+	}
+}
+}
+cout<<"second cmd " << a<< endl;
+return a;
 }
 bool check_if_pipe_command(const char* cmd_line)
 {
@@ -781,12 +838,16 @@ void BackgroundCommand::execute()
 
 RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line) {
     std::cout<<"redirection constructor"<<std::endl;
-    assert(false);
+	int position_arrow=0;
+	string frst= _parseFirstRedirectionCommand(string(cmd_line),&position_arrow);//filling the arrow position
+    string scnd= _ParseSecondRedirectionCommand(string(cmd_line),position_arrow);//using the arrow position...
+	cout<<"REDIRECTION: first cmd is " << frst <<" second is " << scnd<<endl;
+	//levi- dont ask question dont get lies
 }
 
 void RedirectionCommand::execute() {
     std::cout<<"redirection execute"<<std::endl;
-    assert(false);
+
 }
 
 PipeCommand::PipeCommand(const char *cmd_line) : Command(cmd_line) {
