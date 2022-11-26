@@ -112,6 +112,72 @@ bool check_if_redirection_command(const char* cmd_line)
     }
     return is_redirection;
 }
+string _parseFirstPipeCommand(string cmd,int* i)
+{
+	*i=0;
+	string a="";
+	for(char s: cmd)
+	{
+		if(s =='|')
+		{
+			break;
+		}
+		else{
+			a+=s;
+			(*i)++;
+		}
+	}
+	cout<<a<<"pos is"<<*i<<"char is"<<(cmd[*i])<<endl;
+	return a;
+}
+string _ParseSecondPipeCommand(string cmd,int pos)
+{
+	string a="";
+	bool pipe_hit=false;
+	bool amp_after_pipe_hit=false;
+	if(cmd[pos+1]!='&') //regular |
+	{
+		for (char ch: cmd) {
+			if (ch == '|') {
+				pipe_hit = true;
+				continue;
+			}
+			if (pipe_hit == true) {
+				a += ch;
+			}
+		}
+	}
+	else{
+		for(char ch: cmd)
+		{
+			if(ch=='|'){
+				pipe_hit=true;
+				continue;
+			}
+			if(pipe_hit==true)
+			{
+				if(ch=='&')
+				{
+					amp_after_pipe_hit=true;
+					continue;
+				}
+			}
+			if(amp_after_pipe_hit)
+			{
+				a+=ch;
+			}
+		}
+	}
+		cout<<"second cmd " << a<< endl;
+
+
+
+	return a;
+}
+string _parseRedirectionCommand()
+{
+	return "";
+}
 bool check_if_pipe_command(const char* cmd_line)
 {
     int arg_count=0;
@@ -725,10 +791,14 @@ void RedirectionCommand::execute() {
 
 PipeCommand::PipeCommand(const char *cmd_line) : Command(cmd_line) {
     std::cout<<"pipe constructor"<<std::endl;
-    assert(false);
+	int first_pipe_pos=0;
+	string frst= _parseFirstPipeCommand(string(cmd_line),&first_pipe_pos);
+	string scnd= _ParseSecondPipeCommand(string(cmd_line),first_pipe_pos);
+
+
 }
 
 void PipeCommand::execute() {
     std::cout<<"pipe execute"<<std::endl;
-    assert(false);
+
 }
