@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 #include <iostream>
 #include <vector>
 #include <sstream>
@@ -30,7 +31,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 
 enum PARAMSTATUS{NO_GOOD=0,GOOD=1};
 
-//todo for ziv - implement joblist correctly and work on background stuff.(check valgrind)
+
 string _ltrim(const std::string &s) {
     size_t start = s.find_first_not_of(WHITESPACE);
     return (start == std::string::npos) ? "" : s.substr(start);
@@ -82,7 +83,6 @@ void _removeBackgroundSign(char *cmd_line) {
     // truncate the command line string up to the last non-space character
     cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
-// TODO: Add your implementation for classes in Commands.h
 
 /**external command support**/
 bool isExternalComplex(string cmd_line) {
@@ -99,6 +99,8 @@ bool check_if_redirection_command(const char* cmd_line)
     char* cmd_args[COMMAND_MAX_ARGS];
     arg_count= _parseCommandLine(cmd_line,cmd_args);
     bool is_redirection=false;
+	bool is_append=false;
+	bool is_overwrite=false;
     for(int i=0;i<arg_count;i++)
     {
         if(strcmp(cmd_args[i],">")==0 || strcmp(cmd_args[i],">>")==0)
@@ -127,16 +129,18 @@ string _parseFirstPipeCommand(string cmd,int* i)
 			(*i)++;
 		}
 	}
-	cout<<a<<"pos is"<<*i<<"char is"<<(cmd[*i])<<endl;
+	//cout<<a<<"pos is"<<*i<<"char is"<<(cmd[*i])<<endl;
 	return a;
 }
-string _ParseSecondPipeCommand(string cmd,int pos)
+string _ParseSecondPipeCommand(string cmd,int pos,PIPE_CMD_TYPE* pipeCmdType)
 {
+
 	string a="";
 	bool pipe_hit=false;
 	bool amp_after_pipe_hit=false;
 	if(cmd[pos+1]!='&') //regular |
 	{
+		*pipeCmdType=PIPE_STDOUT;
 		for (char ch: cmd) {
 			if (ch == '|') {
 				pipe_hit = true;
@@ -148,6 +152,7 @@ string _ParseSecondPipeCommand(string cmd,int pos)
 		}
 	}
 	else{
+		*pipeCmdType=PIPE_STDERR;
 		for(char ch: cmd)
 		{
 			if(ch=='|'){
@@ -168,7 +173,7 @@ string _ParseSecondPipeCommand(string cmd,int pos)
 			}
 		}
 	}
-		cout<<"second cmd " << a<< endl;
+		//cout<<"second cmd " << a<< endl;
 
 
 
@@ -189,16 +194,17 @@ string _parseFirstRedirectionCommand(string cmd,int * i)
 			(*i)++;
 		}
 	}
-	cout<<a<<"pos is"<<*i<<"char is"<<(cmd[*i])<<endl;
 	return a;
 }
-string  _ParseSecondRedirectionCommand(string cmd,int pos)
+string  _ParseSecondRedirectionCommand(string cmd,int pos,REDIRECTION_CMD_TYPE* cmd_type) // we can use check_if_redirection that does recognize cmd_type better, TODO
 {
 string a="";
 bool arrow_hit=false;
 bool scnd_arrow_hit=false;
+
 if(cmd[pos+1]!='>') //regular >
 {
+	*cmd_type=REDIRECTION_OVERWRITE;
 for (char ch: cmd) {
 
 	if (ch == '>') {
@@ -210,7 +216,8 @@ for (char ch: cmd) {
 		}
 	}
 }
-	else{
+else if(cmd[pos+1]=='>'){
+		*cmd_type=REDIRECTION_APPEND;
 	for(char ch: cmd)
 	{
 	if(ch=='>'&& arrow_hit== false){
@@ -221,7 +228,7 @@ for (char ch: cmd) {
 	{
 		if(ch=='>')
 	{
-		cout<< "scnd arrow hitted"<<endl;
+		//cout<< "scnd arrow hitted"<<endl;
 		scnd_arrow_hit=true;
 		continue;
 	}
@@ -232,7 +239,6 @@ for (char ch: cmd) {
 	}
 }
 }
-cout<<"second cmd " << a<< endl;
 return a;
 }
 bool check_if_pipe_command(const char* cmd_line)
@@ -538,7 +544,6 @@ void SmallShell::setForegroundPid(pid_t new_fg_pid) {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 **/
 Command *SmallShell::CreateCommand(const char *cmd_line) {
-    //todo check if command is pipe or redirection or none...
     bool is_cmd_pipe= false;
     bool is_cmd_redirection=false;
     is_cmd_pipe = check_if_pipe_command(cmd_line);
@@ -644,7 +649,6 @@ JobsList *SmallShell::getJobsList() {
 void ChangeDirCommand::execute() {
 
     //todo check if the command arguments not empty
-    //todo for ziv create 'do syscall' and treat the syscall error handling
     assert(this->arg_num >= 0);
 
     if (this->arg_num > 2) {
@@ -706,7 +710,7 @@ void ExternalCommand::execute() {
                 break;
             case false:
                 SmallShell::getInstance().setForegroundPid(child_pid);
-                printf("waiting \n");
+                //printf("waiting \n");
                 DO_SYS(waitpid(child_pid, NULL, 0));
                 SmallShell::getInstance().setForegroundPid(NO_PID_NUMBER);
                 break;
@@ -837,29 +841,77 @@ void BackgroundCommand::execute()
 
 
 RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line) {
-    std::cout<<"redirection constructor"<<std::endl;
 	int position_arrow=0;
-	string frst= _parseFirstRedirectionCommand(string(cmd_line),&position_arrow);//filling the arrow position
-    string scnd= _ParseSecondRedirectionCommand(string(cmd_line),position_arrow);//using the arrow position...
-	cout<<"REDIRECTION: first cmd is " << frst <<" second is " << scnd<<endl;
+	this->cmd= _parseFirstRedirectionCommand(string(cmd_line),&position_arrow);//filling the arrow position
+    this->file_name= _ParseSecondRedirectionCommand(string(cmd_line),position_arrow,&this->cmdType);//using the arrow position...
+	assert(cmdType!=REDIRECTION_ILLEGAL);
+	//cout<<"REDIRECTION: first cmd is " << frst <<" second is " << scnd<<endl;
 	//levi- dont ask question dont get lies
 }
 
 void RedirectionCommand::execute() {
-    std::cout<<"redirection execute"<<std::endl;
+ int fd_stdout=dup(1);
+	int fd_opened_file;
+	SmallShell& shell=SmallShell::getInstance();
+	Command* cmd=shell.CreateCommand(this->cmd.c_str());
+ if(this->cmdType==REDIRECTION_OVERWRITE) {
+	  fd_opened_file = open(file_name.c_str(),O_CREAT|O_WRONLY, S_IRWXU | S_IRWXG | S_IRWXO);//mode
+	  //error handling goes here todo
+ }
+	if(this->cmdType==REDIRECTION_APPEND) {
+		fd_opened_file = open(file_name.c_str(),O_CREAT|O_WRONLY|O_APPEND, S_IRWXU | S_IRWXG | S_IRWXO);//mode
+		//error handling todo
+	}
+	dup2(fd_opened_file,1);
+	cmd->execute();
+	dup2(fd_stdout,1);
+	close(fd_opened_file);
+	close(fd_stdout);
+	delete cmd;
+
 
 }
 
 PipeCommand::PipeCommand(const char *cmd_line) : Command(cmd_line) {
-    std::cout<<"pipe constructor"<<std::endl;
 	int first_pipe_pos=0;
-	string frst= _parseFirstPipeCommand(string(cmd_line),&first_pipe_pos);
-	string scnd= _ParseSecondPipeCommand(string(cmd_line),first_pipe_pos);
 
-
+	 this->frst= _parseFirstPipeCommand(string(cmd_line),&first_pipe_pos);
+	 this->scnd= _ParseSecondPipeCommand(string(cmd_line),first_pipe_pos,&this->cmdType);
+	 assert(this->cmdType!=PIPE_IILEGAL);
 }
 
 void PipeCommand::execute() {
-    std::cout<<"pipe execute"<<std::endl;
 
+	SmallShell& shell=SmallShell::getInstance();
+	Command* command_1=shell.CreateCommand(frst.c_str());
+	Command* command_2=shell.CreateCommand(scnd.c_str());
+	int fd[2];
+	pipe(fd);
+	if (fork() == 0) {
+		// first child
+		if(this->cmdType==PIPE_STDOUT) {
+			dup2(fd[WR], 1);//stdout
+		}
+		else if (this->cmdType==PIPE_STDERR)
+		{
+			dup2(fd[WR],2);//2==STDERR?
+		}
+		close(fd[RD]);
+		close(fd[WR]);
+		command_1->execute();
+		delete command_1;
+		delete command_2;
+		exit(1);
+	}
+	if (fork() == 0) {
+		// second child
+		dup2(fd[0],0);
+		close(fd[0]);
+		close(fd[1]);
+		command_2->execute();
+		exit(1);
+	}
+	close(fd[0]);
+	close(fd[1]);
+	//exit(1);
 }

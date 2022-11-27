@@ -35,6 +35,9 @@ int main(int argc, char* argv[]) {
         std::getline(std::cin, cmd_line);
         //std::cout << cmd_line<< std::endl; // TODO DELETE
         //std::cout << cmd_line.c_str()<< std::endl; // TODO DELETE
+		if(cmd_line=="")
+		{
+			continue;}
         smash.executeCommand(cmd_line.c_str());
     }
     return 0;
