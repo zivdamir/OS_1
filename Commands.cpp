@@ -129,9 +129,10 @@ string _parseFirstPipeCommand(string cmd,int* i)
 			(*i)++;
 		}
 	}
-	//cout<<a<<"pos is"<<*i<<"char is"<<(cmd[*i])<<endl;
+
 	return a;
 }
+
 string _ParseSecondPipeCommand(string cmd,int pos,PIPE_CMD_TYPE* pipeCmdType)
 {
 
@@ -196,6 +197,17 @@ string _parseFirstRedirectionCommand(string cmd,int * i)
 	}
 	return a;
 }
+/*string _parseFirstRedirectionCommand(string cmd_line, REDIRECTION_CMD_TYPE* redirectionCmdType) {
+	if (cmd_line.find(" > ") != string::npos){
+
+		*redirectionCmdType = REDIRECTION_OVERWRITE;
+		return cmd_line.substr(0, cmd_line.find(" > "));
+	}
+	else {
+		*redirectionCmdType = REDIRECTION_APPEND;
+		 return cmd_line.substr(0, cmd_line.find(" >> "));
+	}
+}*/
 string  _ParseSecondRedirectionCommand(string cmd,int pos,REDIRECTION_CMD_TYPE* cmd_type) // we can use check_if_redirection that does recognize cmd_type better, TODO
 {
 string a="";
@@ -646,6 +658,15 @@ JobsList *SmallShell::getJobsList() {
     return this->jobs_list;
 }
 
+Command *SmallShell::getFgCommand() {
+	return this->fg_command;
+}
+
+void SmallShell::setFgCommand(Command* cmd) {
+	this->fg_command=cmd;
+
+}
+
 void ChangeDirCommand::execute() {
 
     //todo check if the command arguments not empty
@@ -692,8 +713,10 @@ void ExternalCommand::execute() {
     //todo think whether we need to insert a fg process to the job list!
 
     pid_t child_pid = fork();
+
     if (child_pid == 0) // my son
     {
+		setpgrp();
         if (isExternalComplex(string(cmd_line))) {
             DO_SYS(execl("/bin/bash", "bash", "-c",/* “complex-external-command” need to be added by the instructions*/ cmd_line, nullptr));
         }
@@ -889,6 +912,7 @@ void PipeCommand::execute() {
 	pipe(fd);
 	if (fork() == 0) {
 		// first child
+		setpgrp();
 		if(this->cmdType==PIPE_STDOUT) {
 			dup2(fd[WR], 1);//stdout
 		}
@@ -904,6 +928,7 @@ void PipeCommand::execute() {
 		exit(1);
 	}
 	if (fork() == 0) {
+		setpgrp();
 		// second child
 		dup2(fd[0],0);
 		close(fd[0]);
