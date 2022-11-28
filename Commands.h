@@ -30,13 +30,14 @@ protected:
     bool is_pipe_command;
     bool is_redirection_command;
     char cmd_line[COMMAND_MAX_LENGTH];
-    char* arg[COMMAND_MAX_ARGS];
+	char* arg[COMMAND_MAX_ARGS];
     int arg_num;
     bool is_background;
     JobsList* job_list;
  public:
   Command(const char* cmd_line);
   virtual ~Command();
+  char *getCmdLine() ;
   virtual void execute(){
       std::cout<<"Command execute function";
       throw;

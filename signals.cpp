@@ -12,7 +12,7 @@ void ctrlZHandler(int sig_num) {
 	if(cmd!=nullptr)
 	{
 		pid_t pid=shell.getForegroundPid();
-		shell.getJobsList()->addJob(cmd,"",pid,true);//todo replace "" with real cmd_line.
+		shell.getJobsList()->addJob(cmd,cmd->getCmdLine(),pid,true);//todo replace "" with real cmd_line.
 		kill(pid,sig_num);
 		shell.setFgCommand(nullptr);
 		std::cout<<"smash: process "<<pid<<" was stopped"<<std::endl;

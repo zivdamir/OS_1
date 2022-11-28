@@ -322,6 +322,10 @@ ostream &operator<<(ostream &os, Command &command) {
     os<<string(command.cmd_line);
     return os;
 }
+
+ char *Command::getCmdLine()  {
+	return cmd_line;
+}
 /**Command class implementation**/
 
 /**BuiltInCommand class implementation**/
@@ -772,6 +776,7 @@ PARAMSTATUS checkFgAndBgCommandParams(char** arg,int arg_num)
 ForegroundCommand::ForegroundCommand(const char* cmd_line): BuiltInCommand(cmd_line){}
 void ForegroundCommand::execute()
 {
+	SmallShell& shell=SmallShell::getInstance();
     PARAMSTATUS param_status = checkFgAndBgCommandParams(arg,arg_num);
     if(param_status==NO_GOOD)
     {
@@ -801,6 +806,7 @@ void ForegroundCommand::execute()
             return;
         }
     }
+	shell.setFgCommand(job_to_front->getCommand());
     job_to_front->printCommandForFgCommand();
     job_list->removeJobById(job_id);
     /*----------------------------------------------------*/
@@ -809,6 +815,7 @@ void ForegroundCommand::execute()
     pid_t job_pid = job_to_front->getJobPid();
     kill(job_pid,SIGCONT);
     waitpid(job_pid,NULL,0);
+	shell.setFgCommand(nullptr);
     /*----------------------------------------------------*/
 }
 
