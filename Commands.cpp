@@ -340,10 +340,9 @@ BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line){}
 
 
 /**JobEntry methods implementation**/
-JobEntry::JobEntry(int id,pid_t pid,char cmd_line[80], Command *command, bool stopped_flag) {
+JobEntry::JobEntry(int id,pid_t pid,char cmd_line[80], bool stopped_flag) {
     this->id = id;
     this->pid = pid;
-    this->command = command;
     strcpy(this->cmd_line,cmd_line);
     this->insertion_time = time(NULL);
     this->stopped_flag = stopped_flag;
@@ -361,15 +360,15 @@ pid_t JobEntry::getJobPid() {
     return pid;
 }
 
-Command *JobEntry::getCommand() {
-    return command;
+char *JobEntry::getCommand() {
+    return this->cmd_line;
 }
 
 bool JobEntry::isStopped() {
     return stopped_flag;
 }
 void JobEntry::printCommandForFgCommand() {
-    cout<< *command << " : " << this->getJobPid() << endl;
+    cout<< this->getCommand() << " : " << this->getJobPid() << endl;
 }
 
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
@@ -397,10 +396,10 @@ JobsList::~JobsList() {
 
 void JobsList::addJob(Command *cmd,char cmd_line[80], pid_t job_pid, bool isStopped)
 {
-    JobEntry* jobEntry = new JobEntry((this->curr_job_id_max==0)?  1 : this->getMaxJobId()+1
-            ,job_pid,cmd_line,cmd,isStopped);//todo isStopped neccesary?
+    JobEntry* jobEntry = new JobEntry((this->data.size())? this->getMaxJobId()+1 : 1
+            ,job_pid,cmd_line,isStopped);//todo isStopped neccesary?
     this->data.push_back(jobEntry);
-    this->curr_job_id_max=getMaxJobId();
+   // this->curr_job_id_max=getMaxJobId();
 }
 
 void JobsList::printJobsList() {
@@ -410,13 +409,7 @@ void JobsList::printJobsList() {
     }
 }
 
-void JobsList::killAllJobs() {
-    std::cout<<"killAllJobs"<<std::endl;
-    for (JobEntry *job: data) {
 
-        //kill(,SIGKILL);
-    }
-}
 bool isFinished(JobEntry *job)
 {
     //cout << bool(waitpid(job->getJobPid(), nullptr, WNOHANG))<<endl;
@@ -591,11 +584,11 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
         return new JobsCommand(cmd_line);
     }  else if (firstWord.compare("fg") == 0) {
         return new ForegroundCommand(cmd_line);
-    }/*else if (firstWord.compare("bg") == 0) {
+    }else if (firstWord.compare("bg") == 0) {
         return new BackgroundCommand(cmd_line);
     }else if(firstWord.compare("quit") == 0){
         return new QuitCommand(cmd_line);
-    }*/else{
+    }else{
         return new ExternalCommand(cmd_line);
     }
     return nullptr;
@@ -665,11 +658,11 @@ JobsList *SmallShell::getJobsList() {
 Command *SmallShell::getFgCommand() {
 	return this->fg_command;
 }
-
+/*
 void SmallShell::setFgCommand(Command* cmd) {
 	this->fg_command=cmd;
 
-}
+}*/
 
 void ChangeDirCommand::execute() {
 
@@ -734,11 +727,11 @@ void ExternalCommand::execute() {
 
         switch (this->is_background) {
             case true:
-                this->job_list->addJob(this,cmd_line, child_pid);
+                this->job_list->addJob(this, cmd_line, child_pid);
                 break;
             case false:
                 shell.setForegroundPid(child_pid);
-				shell.setFgCommand(this);
+				//shell.setFgCommand(this);
                 //printf("waiting \n");
                 DO_SYS(waitpid(child_pid, NULL, WUNTRACED));
                 shell.setForegroundPid(NO_PID_NUMBER);
@@ -808,7 +801,7 @@ void ForegroundCommand::execute()
             return;
         }
     }
-	shell.setFgCommand(job_to_front->getCommand());
+	//shell.setFgCommand(job_to_front->getCommand());
     job_to_front->printCommandForFgCommand();
     job_list->removeJobById(job_id);
     /*----------------------------------------------------*/
@@ -817,7 +810,7 @@ void ForegroundCommand::execute()
     pid_t job_pid = job_to_front->getJobPid();
     kill(job_pid,SIGCONT);
     waitpid(job_pid,NULL,WUNTRACED);
-	shell.setFgCommand(nullptr);
+	//shell.setFgCommand(nullptr);
     /*----------------------------------------------------*/
 }
 
@@ -872,6 +865,33 @@ void BackgroundCommand::execute()
     /*----------------------------------------------------*/
 }
 
+#define IDENTICAL 0
+
+void JobsList::printAllJobsForQuitCommand()
+{
+    for(JobEntry* job : data)
+    {
+        cout << job->getJobPid() << ": " << job->getCommand() << endl;
+    }
+}
+void JobsList::killAllJobs()
+{
+    for(JobEntry* job : data)
+    {
+        kill(job->getJobPid(),SIGKILL);
+    }
+}
+
+QuitCommand::QuitCommand(const char *cmd_line): BuiltInCommand(cmd_line) {};
+void QuitCommand::execute() {
+    if (arg_num > 1 && strcmp(arg[1], "kill") == IDENTICAL) {
+        job_list->removeFinishedJobs();
+        cout << "smash: sending SIGKILL signal to " << job_list->getListSize() << " jobs:" << endl;
+        job_list->printAllJobsForQuitCommand();
+        this->job_list->killAllJobs();
+    }
+    exit(1); //what argument to send?
+}
 
 RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line) {
 	int position_arrow=0;

@@ -120,7 +120,7 @@ class JobEntry {
 private:
     int id;
     pid_t pid;
-    Command* command;
+    //Command* command;
     char cmd_line[80]={0};
     time_t insertion_time;
     time_t work_time;//for stopped jobs we will measure it as soon as we stop it(stopped jobs dont "work")
@@ -128,10 +128,10 @@ private:
 public:
     int getJobId();
     pid_t getJobPid();
-    Command* getCommand();
+    char* getCommand();
     void printCommandForFgCommand(); // for foreground command
     bool isStopped();
-    JobEntry(int id,int pid,char cmd_line[80], Command* command, bool stopped_flag);//later remove command*
+    JobEntry(int id,int pid,char cmd_line[80], bool stopped_flag);//later remove command*
     ~JobEntry();
     bool operator==(JobEntry jobEntry)//by job entry. we dont care about the command actual things.
     {
@@ -151,7 +151,7 @@ class JobsList {
 private:
  // TODO: Add your data members
  std::vector<JobEntry*> data;
- int curr_job_id_max = 0;//todo implement ziv
+ //int curr_job_id_max = 0;//todo implement ziv ????ziv you are no good we no need this ok? no need! what is ziv what is?
 public:
   JobsList();
   void sort_JobsList();
@@ -168,12 +168,17 @@ public:
   JobEntry *getLastStoppedJob(int *jobId);
   int getLastStoppedJobId();
   // TODO: Add extra methods or modify exisitng ones as needed
+  void printAllJobsForQuitCommand();
+  int getListSize()
+  {
+      return data.size();
+  }
 };
 
 class QuitCommand : public BuiltInCommand {
 // TODO: Add your data members
 public:
-    QuitCommand(const char* cmd_line, JobsList* jobs);
+    QuitCommand(const char* cmd_line);
     virtual ~QuitCommand() {}
     void execute() override;
 };

@@ -14,7 +14,7 @@ void ctrlZHandler(int sig_num) {
 		pid_t pid=shell.getForegroundPid();
 		shell.getJobsList()->addJob(cmd,cmd->getCmdLine(),pid,true);//todo replace "" with real cmd_line.
 		kill(pid,sig_num);
-		shell.setFgCommand(nullptr);
+		//shell.setFgCommand(nullptr);
 		std::cout<<"smash: process "<<pid<<" was stopped"<<std::endl;
 	}
     // TODO: Add your implementation
@@ -48,34 +48,3 @@ void alarmHandler(int sig_num) {
   // TODO: Add your implementation
 }
 
-/*
-#define IDENTICAL 0
-
-void JobsList::printAllJobsForQuitCommand()
-{
-    for(JobEntry* job : data)
-    {
-        cout << job->getJobPid() << ": " << *(job->getCommand()) << endl;
-    }
-}
-void JobsList::killAllJobs()
-{
-    for(JobEntry* job : data)
-    {
-    kill(job->pid,SIGKILL);
-    }
-}
-
-QuitCommand::QuitCommand(const char *cmd_line) {};
-void QuitCommand::execute()
-{
-    if(arg_num>1 && strcmp(arg[1],"kill")==IDENTICAL)
-    {
-        job_list->removeFinishedJobs();
-        cout<< "smash: sending SIGKILL signal to "<< job_list->getListSize() <<" jobs:" <<endl;
-        job_list->printAllJobsForQuitCommand();
-        this->job_list->killAllJobs();
-    }
-    exit(1); //what argument to send?
-}
-*/
