@@ -712,7 +712,7 @@ void ChangeDirCommand::execute() {
 ExternalCommand::ExternalCommand(const char *cmd_line) : Command(cmd_line) {}
 
 void ExternalCommand::execute() {
-
+  SmallShell& shell=SmallShell::getInstance();
     //todo check if the command not empty
     //todo think whether we need to insert a fg process to the job list!
 
@@ -731,15 +731,17 @@ void ExternalCommand::execute() {
     }
     else // fatha'
     {
+
         switch (this->is_background) {
             case true:
                 this->job_list->addJob(this,cmd_line, child_pid);
                 break;
             case false:
-                SmallShell::getInstance().setForegroundPid(child_pid);
+                shell.setForegroundPid(child_pid);
+				shell.setFgCommand(this);
                 //printf("waiting \n");
-                DO_SYS(waitpid(child_pid, NULL, 0));
-                SmallShell::getInstance().setForegroundPid(NO_PID_NUMBER);
+                DO_SYS(waitpid(child_pid, NULL, WUNTRACED));
+                shell.setForegroundPid(NO_PID_NUMBER);
                 break;
         }
     }
@@ -814,7 +816,7 @@ void ForegroundCommand::execute()
     /*tell the process to continue and then wait for it*/
     pid_t job_pid = job_to_front->getJobPid();
     kill(job_pid,SIGCONT);
-    waitpid(job_pid,NULL,0);
+    waitpid(job_pid,NULL,WUNTRACED);
 	shell.setFgCommand(nullptr);
     /*----------------------------------------------------*/
 }
@@ -825,7 +827,7 @@ void BackgroundCommand::execute()
     PARAMSTATUS param_status = checkFgAndBgCommandParams(arg,arg_num);
     if(param_status==NO_GOOD)
     {
-        cout << "smash error: fg: invalid arguments" << endl;
+        cout << "smash error: bg: invalid arguments" << endl;
         return;
     }
 
@@ -848,7 +850,7 @@ void BackgroundCommand::execute()
         job_id = char_to_int(arg[1]);// arg_num == 2
         stopped_job = job_list->getJobById(job_id,status);
         if(status==NOT_FOUND){
-            cout << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            cout << "smash error: bg: job-id " << job_id << " does not exist" << endl;
             return;
         }
         else if(!(stopped_job->isStopped()))
@@ -865,7 +867,8 @@ void BackgroundCommand::execute()
     /*tell the process to continue and then wait for it*/
     pid_t job_pid = stopped_job->getJobPid();
     kill(job_pid,SIGCONT);
-    waitpid(job_pid,NULL,0);
+    //waitpid(job_pid,NULL,0);
+	// FROM ZIV: ARE YOU SHITTING ME LEVI?
     /*----------------------------------------------------*/
 }
 

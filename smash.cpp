@@ -33,9 +33,7 @@ int main(int argc, char* argv[]) {
         std::cout << smash.getPromptName()<<"> ";
         std::string cmd_line;
         std::getline(std::cin, cmd_line);
-        //std::cout << cmd_line<< std::endl; // TODO DELETE
-        //std::cout << cmd_line.c_str()<< std::endl; // TODO DELETE
-		if(cmd_line=="")
+		if(_trim(cmd_line)=="")
 		{
 			continue;}
         smash.executeCommand(cmd_line.c_str());

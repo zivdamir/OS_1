@@ -284,5 +284,5 @@ class SmallShell {
     /**our additional methods**/
 
 };
-
+string _trim(const std::string &s);
 #endif //SMASH_COMMAND_H_
