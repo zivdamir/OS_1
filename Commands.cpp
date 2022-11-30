@@ -700,7 +700,7 @@ void ChangeDirCommand::execute() {
         instance.wasCDCalled = true;
         instance.setLastPwd(string(to_switch_cwd));
 
-        if((chdir(arg[1])==-1)
+        if(chdir(arg[1])==-1)
 		{
 			perror("smash error: chdir failed");
 			exit(1);

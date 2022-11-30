@@ -13,9 +13,9 @@ void ctrlZHandler(int sig_num) {
 	{
 		pid_t pid=shell.getForegroundPid();
 		shell.getJobsList()->addJob(cmd,cmd->getCmdLine(),pid,true);//todo replace "" with real cmd_line.
-		kill(pid,sig_num);
+		kill(pid,SIGSTOP);
 		//shell.setFgCommand(nullptr);
-		std::cout<<"smash: process "<<pid<<" was stopped"<<std::endl;
+		std::cout<< "smash: process " <<pid << " was stopped"<<std::endl;
 	}
     // TODO: Add your implementation
     /*
@@ -34,14 +34,15 @@ void ctrlZHandler(int sig_num) {
 
 void ctrlCHandler(int sig_num) {
   // TODO: Add your implementation
-    /*cout << "smash: got ctrl-C" << endl;
-    SmallShell &instance = SmallShell::getInstance();
+    cout << "smash: got ctrl-C" << endl;
+    SmallShell& instance = SmallShell::getInstance();
     pid_t fg_pid = instance.getForegroundPid();
+    cout<< fg_pid << endl;
     if (!(fg_pid==NO_PID_NUMBER))
     {
         kill(fg_pid,SIGKILL);
         cout<< "smash: process "<< fg_pid <<" was killed" << endl;
-    }*/
+    }
 }
 
 void alarmHandler(int sig_num) {
