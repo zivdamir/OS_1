@@ -278,10 +278,16 @@ int char_to_int(const char* str)
 {
     int value = 0;
     string temp = str;
+    bool first_letter = true;
     for(char letter: temp)
     {
+        if(first_letter && letter == '-')
+        {
+            continue;
+        }
         value *= 10;
         value += letter - 48;
+        first_letter = false;
     }
     return value;
 }
@@ -1084,22 +1090,62 @@ void PipeCommand::execute() {
 	//exit(1);
 }
 
-bool checkKillParams()
+PARAMSTATUS checkKillParams(char** arg, int arg_num)
 {
-    
+    if(arg_num!=3)
+    {
+        return NO_GOOD;
+    }
+    string signum_param = arg[1];
+    bool first_letter = true;
+    for(char letter: signum_param)
+    {
+        if(first_letter)
+        {
+           if(letter != '-')
+           {
+               return NO_GOOD;
+           }
+           else
+           {
+               first_letter=false;
+               continue;
+           }
+        }
+
+        if (letter < '0' || letter > '9') {
+            return NO_GOOD; //number_param[i] isn't a number..
+        }
+        first_letter=false;
+    }
+    string id_num_param = arg[2];
+    for(char letter: id_num_param)
+    {
+        if (letter < '0' || letter > '9') {
+            return NO_GOOD; //number_param[i] isn't a number..
+        }
+    }
+    return GOOD;
 }
 
 KillCommand::KillCommand(const char* cmd_line):BuiltInCommand(cmd_line){}
 void KillCommand::execute()
 {
-    if(checkKillParams()==NO_GOOD)
+    if(checkKillParams(arg,arg_num)==NO_GOOD)
     {
         cerr << "smash error: kill: invalid arguments" << endl;
+        return;
     }
+    int sig_num = char_to_int(arg[1]);
+    int job_id = char_to_int(arg[2]);
+
+
     FINDSTATUS job_exists_in_the_background;
-    job_list->getJobById(arg[2],job_exists_in_the_background&);
+    JobEntry* job_to_send_signal_to = job_list->getJobById(job_id,job_exists_in_the_background);
     if(!job_exists_in_the_background)
     {
-        cerr << "smash error: kill: job-id <job-id> does not exist" << endl;
+        cerr << "smash error: kill: job-id "<< arg[2] << " does not exist" << endl;
+        return;
     }
+    kill(job_to_send_signal_to->getJobPid(), sig_num);
 }
