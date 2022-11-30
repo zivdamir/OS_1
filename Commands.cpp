@@ -670,13 +670,13 @@ void ChangeDirCommand::execute() {
     assert(this->arg_num >= 0);
 
     if (this->arg_num > 2) {
-        cout << "smash error: cd: too many arguments" << endl;
+        cerr << "smash error: cd: too many arguments" << endl;
     }
     SmallShell &instance = SmallShell::getInstance();
     // instance.setLastPwd("ziv-levi");
     if (strcmp(this->arg[1], "-") == 0) {
         if (instance.wasCDCalled == false) {
-            cout << "smash error: cd: OLDPWD not set" << endl;
+            cerr << "smash error: cd: OLDPWD not set" << endl;
         } else {
 
             char *to_switch_cwd = getcwd(NULL, 0);
@@ -691,11 +691,20 @@ void ChangeDirCommand::execute() {
         }
     } else {
         char *to_switch_cwd = getcwd(NULL, 0);
+		if(to_switch_cwd==nullptr)
+		{
+			perror("smash error: getcwd failed");
+			exit(1);
+		}
         //we need to check if the syscall works
         instance.wasCDCalled = true;
         instance.setLastPwd(string(to_switch_cwd));
 
-        DO_SYS(chdir(arg[1]));
+        if((chdir(arg[1])==-1)
+		{
+			perror("smash error: chdir failed");
+			exit(1);
+		}
         free(to_switch_cwd);
         //we need to check if the syscall works
 
@@ -710,15 +719,26 @@ void ExternalCommand::execute() {
     //todo think whether we need to insert a fg process to the job list!
 
     pid_t child_pid = fork();
-
+	if(child_pid==-1)
+	{
+		perror("smash error: fork failed");
+		exit(1);
+	}
     if (child_pid == 0) // my son
     {
 		setpgrp();
         if (isExternalComplex(string(cmd_line))) {
-            DO_SYS(execl("/bin/bash", "bash", "-c",/* “complex-external-command” need to be added by the instructions*/ cmd_line, nullptr));
+            if(execl("/bin/bash", "bash", "-c",/* “complex-external-command” need to be added by the instructions*/ cmd_line, nullptr)==-1){
+				perror("smash error: execv failed");
+				exit(1);
+			}
         }
     else /*if(the first argument start with ./)*/ {
-            DO_SYS(execvp(this->arg[0], this->arg));
+            if(execvp(this->arg[0], this->arg)==-1)
+			{
+				perror("smash error: execv failed");
+				exit(1);
+			}
         }
 
     }
@@ -733,7 +753,11 @@ void ExternalCommand::execute() {
                 shell.setForegroundPid(child_pid);
 				//shell.setFgCommand(this);
                 //printf("waiting \n");
-                DO_SYS(waitpid(child_pid, NULL, WUNTRACED));
+                if(waitpid(child_pid, NULL, WUNTRACED)==-1)
+				{
+					perror("smash error: waitpid failed");
+					exit(1);
+				}
                 shell.setForegroundPid(NO_PID_NUMBER);
                 break;
         }
@@ -775,7 +799,7 @@ void ForegroundCommand::execute()
     PARAMSTATUS param_status = checkFgAndBgCommandParams(arg,arg_num);
     if(param_status==NO_GOOD)
     {
-        cout << "smash error: fg: invalid arguments" << endl;
+        cerr << "smash error: fg: invalid arguments" << endl;
         return;
     }
 
@@ -789,7 +813,7 @@ void ForegroundCommand::execute()
         job_id = job_list->getMaxJobId(); // arg_num == 1
         job_to_front = job_list->getJobById(job_id,status);
         if (status==NOT_FOUND) {
-            cout << "smash error: fg: jobs list is empty" << endl;
+            cerr << "smash error: fg: jobs list is empty" << endl;
             return;
         }
     }
@@ -797,7 +821,7 @@ void ForegroundCommand::execute()
         job_id = char_to_int(arg[1]);// arg_num == 2
         job_to_front = job_list->getJobById(job_id, status);
         if (status==NOT_FOUND) {
-            cout << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+            cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
             return;
         }
     }
@@ -808,8 +832,14 @@ void ForegroundCommand::execute()
 
     /*tell the process to continue and then wait for it*/
     pid_t job_pid = job_to_front->getJobPid();
-    kill(job_pid,SIGCONT);
-    waitpid(job_pid,NULL,WUNTRACED);
+    if(kill(job_pid,SIGCONT)==-1){
+		perror("smash error: kill failed");
+		exit(1);
+	}
+    if(waitpid(job_pid,NULL,WUNTRACED)==-1){
+		perror("smash error: waitpid failed");
+		exit(1);
+	}
 	//shell.setFgCommand(nullptr);
     /*----------------------------------------------------*/
 }
@@ -820,7 +850,7 @@ void BackgroundCommand::execute()
     PARAMSTATUS param_status = checkFgAndBgCommandParams(arg,arg_num);
     if(param_status==NO_GOOD)
     {
-        cout << "smash error: bg: invalid arguments" << endl;
+        cerr<< "smash error: bg: invalid arguments" << endl;
         return;
     }
 
@@ -834,7 +864,7 @@ void BackgroundCommand::execute()
         //this->job_list->getLastStoppedJobId(); // arg_num=1
         stopped_job = job_list->getJobById(job_id,status);
         if(status==NOT_FOUND) {
-            cout << "smash error: bg: there is no stopped jobs to resume" << endl;
+            cerr << "smash error: bg: there is no stopped jobs to resume" << endl;
             return;
         }
     }
@@ -843,12 +873,12 @@ void BackgroundCommand::execute()
         job_id = char_to_int(arg[1]);// arg_num == 2
         stopped_job = job_list->getJobById(job_id,status);
         if(status==NOT_FOUND){
-            cout << "smash error: bg: job-id " << job_id << " does not exist" << endl;
+            cerr << "smash error: bg: job-id " << job_id << " does not exist" << endl;
             return;
         }
         else if(!(stopped_job->isStopped()))
         {
-            cout << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
+            cerr << "smash error: bg: job-id " << job_id << " is already running in the background" << endl;
             return;
         }
     }
@@ -859,7 +889,11 @@ void BackgroundCommand::execute()
 
     /*tell the process to continue and then wait for it*/
     pid_t job_pid = stopped_job->getJobPid();
-    kill(job_pid,SIGCONT);
+    if(kill(job_pid,SIGCONT)==-1)
+	{
+		perror("smash error: kill failed");
+		exit(1);
+	}
     //waitpid(job_pid,NULL,0);
 	// FROM ZIV: ARE YOU SHITTING ME LEVI?
     /*----------------------------------------------------*/
@@ -904,22 +938,53 @@ RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line)
 
 void RedirectionCommand::execute() {
  int fd_stdout=dup(1);
+ if(fd_stdout==-1)
+ {
+		 perror("smash error: dup failed");
+		 exit(1);
+
+ }
 	int fd_opened_file;
 	SmallShell& shell=SmallShell::getInstance();
 	Command* cmd=shell.CreateCommand(this->cmd.c_str());
  if(this->cmdType==REDIRECTION_OVERWRITE) {
 	  fd_opened_file = open(file_name.c_str(),O_CREAT|O_WRONLY, S_IRWXU | S_IRWXG | S_IRWXO);//mode
-	  //error handling goes here todo
+	  if(fd_opened_file==-1)
+	  {
+		  perror("smash error: open failed");
+		  exit(1);
+	  }
  }
 	if(this->cmdType==REDIRECTION_APPEND) {
 		fd_opened_file = open(file_name.c_str(),O_CREAT|O_WRONLY|O_APPEND, S_IRWXU | S_IRWXG | S_IRWXO);//mode
-		//error handling todo
+		if(fd_opened_file==-1)
+		{
+			perror("smash error: open failed");
+			exit(1);
+		}
 	}
-	dup2(fd_opened_file,1);
+	if(dup2(fd_opened_file,1)==-1)
+	{
+		perror("smash error: dup2 failed");
+		exit(1);
+	}
 	cmd->execute();
-	dup2(fd_stdout,1);
-	close(fd_opened_file);
-	close(fd_stdout);
+	if(dup2(fd_stdout,1)==-1)
+		{
+			perror("smash error: dup2 failed");
+			exit(1);
+		}
+
+	if(close(fd_opened_file)==-1)
+	{
+		perror("smash error: close failed");
+		exit(1);
+	}
+	if(close(fd_stdout)==-1)
+	{
+		perror("smash error: close failed");
+		exit(1);
+	}
 	delete cmd;
 
 
@@ -939,32 +1004,76 @@ void PipeCommand::execute() {
 	Command* command_1=shell.CreateCommand(frst.c_str());
 	Command* command_2=shell.CreateCommand(scnd.c_str());
 	int fd[2];
-	pipe(fd);
-	if (fork() == 0) {
+	if(pipe(fd)==-1)
+	{
+			perror("smash error: pipe failed");
+			exit(1);
+	}
+	pid_t frst_child=fork();
+	if(frst_child==-1)
+	{
+		perror("smash error: fork failed");
+		exit(1);
+	}
+	else if (frst_child == 0) {
 		// first child
-		setpgrp();
+		if(setpgrp()==-1)
+		{
+			perror("smash error: setpgrp failed");
+			exit(1);
+		}
 		if(this->cmdType==PIPE_STDOUT) {
-			dup2(fd[WR], 1);//stdout
+			if(dup2(fd[WR], 1)==-1)
+			{
+				perror("smash error: dup2 failed");
+				exit(1);
+			}//stdout
 		}
 		else if (this->cmdType==PIPE_STDERR)
 		{
-			dup2(fd[WR],2);//2==STDERR?
+			if(dup2(fd[WR],2)==-1)//2==STDERR?
+			{
+				perror("smash error: dup2 failed");
+				exit(1);
+			}//stdout
 		}
-		close(fd[RD]);
-		close(fd[WR]);
+
+		if(close(fd[RD])==-1)
+		{
+			perror("smash error: close failed");
+			exit(1);
+		}//stdout
+		if(close(fd[WR])==-1)
+		{
+			perror("smash error: close failed");
+			exit(1);
+		}//stdout
 		command_1->execute();
 		delete command_1;
 		delete command_2;
 		exit(1);
 	}
-	if (fork() == 0) {
-		setpgrp();
-		// second child
-		dup2(fd[0],0);
-		close(fd[0]);
-		close(fd[1]);
-		command_2->execute();
-		exit(1);
+	else {
+		pid_t scnd_child=fork();
+		if(scnd_child==-1)
+		{
+			perror("smash error: fork failed");
+			exit(1);
+		}
+		else if (scnd_child == 0) {
+			if(setpgrp()==-1)
+			{
+				perror("smash error: setpgrp failed");
+				exit(1);
+			}
+			//todo need to continue from here
+			// second child
+			dup2(fd[0], 0);
+			close(fd[0]);
+			close(fd[1]);
+			command_2->execute();
+			exit(1);
+		}
 	}
 	close(fd[0]);
 	close(fd[1]);
