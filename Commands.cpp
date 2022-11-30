@@ -837,11 +837,11 @@ void ForegroundCommand::execute()
     }
 	//shell.setFgCommand(job_to_front->getCommand());
     job_to_front->printCommandForFgCommand();
+    pid_t job_pid = job_to_front->getJobPid();
     job_list->removeJobById(job_id);
     /*----------------------------------------------------*/
 
     /*tell the process to continue and then wait for it*/
-    pid_t job_pid = job_to_front->getJobPid();
     if(kill(job_pid,SIGCONT)==-1){
 		perror("smash error: kill failed");
 		exit(1);
