@@ -1147,5 +1147,9 @@ void KillCommand::execute()
         cerr << "smash error: kill: job-id "<< arg[2] << " does not exist" << endl;
         return;
     }
-    kill(job_to_send_signal_to->getJobPid(), sig_num);
+    if(kill(job_to_send_signal_to->getJobPid(), sig_num)==-1)
+    {
+        perror("smash error: kill failed");
+        exit(1);
+    }
 }
