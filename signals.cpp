@@ -10,6 +10,7 @@ void ctrlZHandler(int sig_num) {
 	SmallShell& shell=SmallShell::getInstance();
 	char* cmd_line = shell.getFgCommand();
     pid_t fg_pid = shell.getForegroundPid();
+    cout <<"foreground pid during ctrl-Z: " << fg_pid << endl;
     if (!(fg_pid==NO_PID_NUMBER))
 	{
 		shell.getJobsList()->addJob(cmd_line,fg_pid,true);
@@ -17,6 +18,8 @@ void ctrlZHandler(int sig_num) {
 		//shell.setFgCommand(nullptr);
 		std::cout<< "smash: process " << fg_pid << " was stopped"<<std::endl;
 	}
+    cout <<"after if fg_pid: " << fg_pid << endl;
+
     // TODO: Add your implementation
     /*
     cout << "smash: got ctrl-Z" << endl;
