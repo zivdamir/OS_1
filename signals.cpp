@@ -20,6 +20,35 @@ void ctrlZHandler(int sig_num) {
 	}
     cout <<"after if fg_pid: " << fg_pid << endl;
 
+    /*
+
+     sleep 100&
+sleep 200&
+sleep 300&
+sleep 400&
+sleep 500&
+sleep 600&
+sleep 700&
+jobs
+sleep 800&
+sleep 900&
+jobs
+kill -9 3
+^1
+jobs
+sleep 1000&
+jobs
+kill -9 10
+^1
+jobs
+sleep 1001&
+jobs
+fg
+^Z
+
+
+     */
+
     // TODO: Add your implementation
     /*
     cout << "smash: got ctrl-Z" << endl;
