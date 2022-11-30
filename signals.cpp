@@ -8,14 +8,14 @@ using namespace std;
 void ctrlZHandler(int sig_num) {
 	std::cout<<"smash: got ctrl-Z"<<std::endl;
 	SmallShell& shell=SmallShell::getInstance();
-	Command* cmd=shell.getFgCommand();
-	if(cmd!=nullptr)
+	char* cmd_line = shell.getFgCommand();
+    pid_t fg_pid = shell.getForegroundPid();
+    if (!(fg_pid==NO_PID_NUMBER))
 	{
-		pid_t pid=shell.getForegroundPid();
-		shell.getJobsList()->addJob(cmd,cmd->getCmdLine(),pid,true);//todo replace "" with real cmd_line.
-		kill(pid,SIGSTOP);
+		shell.getJobsList()->addJob(cmd_line,fg_pid,true);
+		kill(fg_pid,SIGSTOP);
 		//shell.setFgCommand(nullptr);
-		std::cout<< "smash: process " <<pid << " was stopped"<<std::endl;
+		std::cout<< "smash: process " << fg_pid << " was stopped"<<std::endl;
 	}
     // TODO: Add your implementation
     /*
@@ -37,7 +37,6 @@ void ctrlCHandler(int sig_num) {
     cout << "smash: got ctrl-C" << endl;
     SmallShell& instance = SmallShell::getInstance();
     pid_t fg_pid = instance.getForegroundPid();
-    cout<< fg_pid << endl;
     if (!(fg_pid==NO_PID_NUMBER))
     {
         kill(fg_pid,SIGKILL);

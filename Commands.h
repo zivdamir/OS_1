@@ -158,7 +158,7 @@ public:
   ~JobsList();
   int getMaxJobId();
   JobEntry* find_by_job_id(int id,enum FINDSTATUS& find_status);
-  void addJob(Command* cmd,char cmd_line[80],pid_t job_pid, bool isStopped = false);
+  void addJob(char cmd_line[80],pid_t job_pid, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
@@ -239,7 +239,7 @@ class KillCommand : public BuiltInCommand {
   /* Bonus */
  // TODO: Add your data members
  public:
-  KillCommand(const char* cmd_line, JobsList* jobs);
+  KillCommand(const char* cmd_line);
   virtual ~KillCommand() {}
   void execute() override;
 };
@@ -247,7 +247,7 @@ class KillCommand : public BuiltInCommand {
 class SmallShell {
  private:
  /**our additional parameters**/
- Command* fg_command=nullptr;
+ char fg_command_line[80];
  string prompt_name;
  pid_t foreground_pid;
  JobsList* jobs_list;
@@ -256,8 +256,8 @@ class SmallShell {
   SmallShell();
  public:
  /**the original methods**/
-  Command* getFgCommand();
-  void setFgCommand(Command* cmd);
+  char* getFgCommand();
+  void setFgCommand(char* cmd_line);
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator

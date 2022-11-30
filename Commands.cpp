@@ -394,7 +394,7 @@ JobsList::~JobsList() {
     }
 }
 
-void JobsList::addJob(Command *cmd,char cmd_line[80], pid_t job_pid, bool isStopped)
+void JobsList::addJob(char cmd_line[80], pid_t job_pid, bool isStopped)
 {
     JobEntry* jobEntry = new JobEntry((this->data.size())? this->getMaxJobId()+1 : 1
             ,job_pid,cmd_line,isStopped);//todo isStopped neccesary?
@@ -588,6 +588,9 @@ Command *SmallShell::CreateCommand(const char *cmd_line) {
         return new BackgroundCommand(cmd_line);
     }else if(firstWord.compare("quit") == 0){
         return new QuitCommand(cmd_line);
+    } else if(firstWord.compare("kill") == 0)
+    {
+        return new KillCommand(cmd_line);
     }else{
         return new ExternalCommand(cmd_line);
     }
@@ -655,14 +658,14 @@ JobsList *SmallShell::getJobsList() {
     return this->jobs_list;
 }
 
-Command *SmallShell::getFgCommand() {
-	return this->fg_command;
+char *SmallShell::getFgCommand() {
+	return this->fg_command_line;
 }
-/*
-void SmallShell::setFgCommand(Command* cmd) {
-	this->fg_command=cmd;
 
-}*/
+void SmallShell::setFgCommand(char* cmd_line) {
+    strcpy(this->fg_command_line,cmd_line);
+
+}
 
 void ChangeDirCommand::execute() {
 
@@ -747,10 +750,11 @@ void ExternalCommand::execute() {
 
         switch (this->is_background) {
             case true:
-                this->job_list->addJob(this, cmd_line, child_pid);
+                this->job_list->addJob(cmd_line, child_pid);
                 break;
             case false:
                 shell.setForegroundPid(child_pid);
+                shell.setFgCommand(cmd_line);
 				//shell.setFgCommand(this);
                 //printf("waiting \n");
                 if(waitpid(child_pid, NULL, WUNTRACED)==-1)
@@ -1078,4 +1082,24 @@ void PipeCommand::execute() {
 	close(fd[0]);
 	close(fd[1]);
 	//exit(1);
+}
+
+bool checkKillParams()
+{
+    
+}
+
+KillCommand::KillCommand(const char* cmd_line):BuiltInCommand(cmd_line){}
+void KillCommand::execute()
+{
+    if(checkKillParams()==NO_GOOD)
+    {
+        cerr << "smash error: kill: invalid arguments" << endl;
+    }
+    FINDSTATUS job_exists_in_the_background;
+    job_list->getJobById(arg[2],job_exists_in_the_background&);
+    if(!job_exists_in_the_background)
+    {
+        cerr << "smash error: kill: job-id <job-id> does not exist" << endl;
+    }
 }

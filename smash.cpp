@@ -29,7 +29,6 @@ int main(int argc, char* argv[]) {
     //TODO: setup sig alarm handler
 
     SmallShell& smash = SmallShell::getInstance();
-    std::cout<<smash.getForegroundPid()<<std::endl;
     while(true) {
         std::cout << smash.getPromptName()<<"> ";
         std::string cmd_line;
