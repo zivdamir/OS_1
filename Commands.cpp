@@ -839,6 +839,8 @@ void ForegroundCommand::execute()
     job_to_front->printCommandForFgCommand();
     pid_t job_pid = job_to_front->getJobPid();
     job_list->removeJobById(job_id);
+	shell.setForegroundPid(job_pid);
+	shell.setFgCommand(job_to_front->getCommand());
     /*----------------------------------------------------*/
 
     /*tell the process to continue and then wait for it*/
@@ -881,6 +883,7 @@ void BackgroundCommand::execute()
     else
     {
         job_id = char_to_int(arg[1]);// arg_num == 2
+
         stopped_job = job_list->getJobById(job_id,status);
         if(status==NOT_FOUND){
             cerr << "smash error: bg: job-id " << job_id << " does not exist" << endl;
