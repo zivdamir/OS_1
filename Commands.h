@@ -23,9 +23,8 @@ enum PIPE_CMD_TYPE{PIPE_IILEGAL=-1,PIPE_STDOUT=0,PIPE_STDERR=1};// will be retur
 enum REDIRECTION_CMD_TYPE{REDIRECTION_ILLEGAL=-1,REDIRECTION_OVERWRITE=2,REDIRECTION_APPEND=3}; // will be returned in redirection parser.
 enum FINDSTATUS{NOT_FOUND=0,FOUND=1};//serves as status for find method.
 class JobsList;
-class Command {
 
-// TODO: Add your data members
+class Command {
 protected:
     bool is_pipe_command;
     bool is_redirection_command;
@@ -43,9 +42,6 @@ protected:
       throw;
   }
   friend ostream& operator<<(ostream& os,Command& command);
-  //virtual void prepare();
-  //virtual void cleanup();
-  // TODO: Add your extra methods if needed
 };
 
 
@@ -85,14 +81,10 @@ public:
 
 class ChangeDirCommand : public BuiltInCommand {
 // TODO: Add your data members public:
-private:
-   // string* plast_pwd = nullptr;//todo remove if redundant
 public:
   ChangeDirCommand(const char* cmd_line);
   virtual ~ChangeDirCommand();
   void execute() override;
-  //string* getPLastPwd();//todo remove if redundant
- // void setLastPwd(string* new_last_pwd);//todo remove if redundant
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
@@ -120,31 +112,32 @@ class JobEntry {
 private:
     int id;
     pid_t pid;
-    //Command* command;
     char cmd_line[80]={0};
     time_t insertion_time;
-    time_t work_time;//for stopped jobs we will measure it as soon as we stop it(stopped jobs dont "work")
+    time_t stop_time;
     bool stopped_flag;
 public:
     int getJobId();
     pid_t getJobPid();
     char* getCommand();
-    void printCommandForFgCommand(); // for foreground command
+    void printCommandForFgAndBgCommand();
     bool isStopped();
-    JobEntry(int id,int pid,char cmd_line[80], bool stopped_flag);//later remove command*
+    JobEntry(int id,int pid,char cmd_line[80], bool stopped_flag);
     ~JobEntry();
-    bool operator==(JobEntry jobEntry)//by job entry. we dont care about the command actual things.
+    bool operator==(JobEntry jobEntry)
     {
         return this->id==jobEntry.id;
     }
     bool operator<=(JobEntry jobEntry)
     {
-        //same idea as == operator, we don't care about commands string content. only about the job id.
         return this->id<=jobEntry.id;
     }
     friend ostream& operator<<(ostream& os,JobEntry& jobEntry);
 
-
+    void setJobStoppingTime();
+    time_t getJobStoppingTime();
+    void stopJob();
+    void continueJob();
 };
 
 class JobsList {
@@ -164,9 +157,7 @@ public:
   void removeFinishedJobs();
   JobEntry * getJobById(int ,enum FINDSTATUS& find_status);//findstatus should be sent as empty POINTER!!!
   void removeJobById(int jobId);
-  JobEntry * getLastJob(int* lastJobId);
-  JobEntry *getLastStoppedJob(int *jobId);
-  int getLastStoppedJobId();
+  JobEntry* getLastStoppedJob();
   // TODO: Add extra methods or modify exisitng ones as needed
   void printAllJobsForQuitCommand();
   int getListSize()
@@ -279,11 +270,11 @@ class SmallShell {
   JobsList* getJobsList();
   void setForegroundPid(pid_t new_fg_pid);
 
-    /**change dir support methods**/
-    string getLastPwd();
-    void setLastPwd(string new_last_pwd);
-    bool wasCDCalled=false; // indicates whether CD command was already called, false if not (if not last_pwd is not valid) (used in "cd -" command)
-    /**change dir support methods**/
+  /**change dir support methods**/
+  string getLastPwd();
+  void setLastPwd(string new_last_pwd);
+  bool wasCDCalled=false; // indicates whether CD command was already called, false if not (if not last_pwd is not valid) (used in "cd -" command)
+  /**change dir support methods**/
 
 
     /**our additional methods**/

@@ -18,8 +18,7 @@ void ctrlZHandler(int sig_num) {
 	{
 		shell.getJobsList()->addJob(cmd_line,fg_pid,true);
 		kill(fg_pid,SIGSTOP);
-		//shell.setFgCommand(nullptr);
-		std::cout<< "smash: process " << fg_pid << " was stopped"<<std::endl;
+		std::cout<< "smash: process " << fg_pid << " was stopped" << std::endl;
 	}
 	return;
     // TODO: Add your implementation
