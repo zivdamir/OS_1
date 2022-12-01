@@ -47,231 +47,32 @@ string _trim(const std::string &s) {
 }
 
 /**external command support**/
-//int _parseCommandLine(const char *cmd_line, char **args);
+int _parseCommandLine(const char *cmd_line, char **args);
 //todo maybe add indicator to which one of the redirection symbols we found...for this momemnt we only test if we can spot it..
 
-/*
+//function to detect if command is redirection/pipe
+//function to parse the pipe/redirection command line and return its correct status
 
-bool check_if_redirection_command(const char* cmd_line){
-   string str_cmd_line = string(cmd_line);
-   for(char letter: str_cmd_line)
-   {
-      if(letter == '>'){
-          return true;
-      }
-   }
-   return false;
-    /* int arg_count=0;
-    char* cmd_args[COMMAND_MAX_ARGS];
-    arg_count = _parseCommandLine(cmd_line,cmd_args);
-    bool is_redirection=false;
-    bool is_append=false;
-    bool is_overwrite=false;
-    for(int i=0;i<arg_count;i++)
-    {
-        if(strcmp(cmd_args[i],">")==0 || strcmp(cmd_args[i],">>")==0)
-        {
-            is_redirection=true;
-            break;
-        }
-    }
-    for (int i = 0; i < arg_count; i++) {
-        free(cmd_args[i]);
-    }
-    return is_redirection;*/
-/*}
-string _parseFirstPipeCommand(string cmd,int* i)
-{
-    *i=0;
-    string a="";
-    for(char s: cmd)
-    {
-        if(s =='|')
-        {
-            break;
-        }
-        else{
-            a+=s;
-            (*i)++;
-        }
-    }
-
-    return a;
-}
-string _ParseSecondPipeCommand(string cmd,int pos,PIPE_CMD_TYPE* pipeCmdType)
-{
-
-    string a="";
-    bool pipe_hit=false;
-    bool amp_after_pipe_hit=false;
-    if(cmd[pos+1]!='&') //regular |
-    {
-        *pipeCmdType=PIPE_STDOUT;
-        for (char ch: cmd) {
-            if (ch == '|') {
-                pipe_hit = true;
-                continue;
-            }
-            if (pipe_hit == true) {
-                a += ch;
-            }
-        }
-    }
-    else{
-        *pipeCmdType=PIPE_STDERR;
-        for(char ch: cmd)
-        {
-            if(ch=='|'){
-                pipe_hit=true;
-                continue;
-            }
-            if(pipe_hit==true)
-            {
-                if(ch=='&')
-                {
-                    amp_after_pipe_hit=true;
-                    continue;
-                }
-            }
-            if(amp_after_pipe_hit)
-            {
-                a+=ch;
-            }
-        }
-    }
-    //cout<<"second cmd " << a<< endl;
-
-
-
-    return a;
-}
-string _parseFirstRedirectionCommand(string cmd,int * i)
-{
-    *i=0;
-    string a="";
-    for(char s: cmd)
-    {
-        if(s =='>')
-        {
-            break;
-        }
-        else{
-            a+=s;
-            (*i)++;
-        }
-    }
-    return a;
-}
-// we can use check_if_redirection that does recognize cmd_type better, TODO
-string  _ParseSecondRedirectionCommand(string cmd,int pos,REDIRECTION_CMD_TYPE* cmd_type){
-    string a="";
-    bool arrow_hit=false;
-    bool scnd_arrow_hit=false;
-    if(cmd[pos+1]!='>') //regular >
-    {
-        *cmd_type=REDIRECTION_OVERWRITE;
-        for (char ch: cmd) {
-            if (ch == '>') {
-                arrow_hit = true;
-                continue;
-            }
-            if (arrow_hit == true) {
-                a += ch;
-            }
-        }
-    }
-    else if(cmd[pos+1]=='>'){
-        *cmd_type=REDIRECTION_APPEND;
-        for(char ch: cmd)
-        {
-            if(ch=='>'&& arrow_hit== false){
-                arrow_hit=true;
-                continue;
-            }
-            if(arrow_hit == true)
-            {
-                if(ch=='>')
-                {
-                    //cout<< "scnd arrow hitted"<<endl;
-                    scnd_arrow_hit=true;
-                    continue;
-                }
-            }
-            if(scnd_arrow_hit)
-            {
-                a+=ch;
-            }
-        }
-    }
-    return a;
-}
-
-bool check_if_pipe_command(const char* cmd_line)
-{
-    string str_cmd_line = string(cmd_line);
-    for(char letter: str_cmd_line)
-    {
-        if(letter == '|'){
-            return true;
-        }
-    }
-    return false;
-    /*
-    int arg_count=0;
-    char* cmd_args[COMMAND_MAX_ARGS];
-    arg_count= _parseCommandLine(cmd_line,cmd_args);
-    bool is_pipe=false;
-    for(int i=0;i<arg_count;i++) {
-        if (strcmp(cmd_args[i], "|") == 0 || strcmp(cmd_args[i], "|&") == 0)
-        {
-            is_pipe=true;
-            break;
-        }
-    }
-    for (int i = 0; i < arg_count; i++) {
-        free(cmd_args[i]);
-    }
-    return is_pipe;*/
-/*}*/
-
-string _parseCommandLinePipeFirst(string cmd_line, bool *is_stderr) {
-    if (cmd_line.find("|&") != string::npos){
-        *is_stderr = true;
-        return cmd_line.substr(0, cmd_line.find("|&"));
-    }
-    else { //' | ' is in cmd_line
-        *is_stderr = false;
-        return cmd_line.substr(0, cmd_line.find("|"));
-    }
-}
-
-string _parseCommandLinePipeSecond(string cmd_line){
-    if (cmd_line.find("|&") != std::string::npos){
-        return cmd_line.substr(cmd_line.find("|&")+2);
-    }
-    else { //'|' is in cmd_line
-        return cmd_line.substr(cmd_line.find("|")+1);
-    }
-}
-
-string _parseCommandLineRedirectionFirst(string cmd_line, bool *is_append) {
-    if (cmd_line.find(">>") != string::npos){
-        *is_append = true;
-        return cmd_line.substr(0, cmd_line.find(">>"));
-    }
-    else { //' > ' is in cmd_line
-        *is_append = false;
-        return cmd_line.substr(0, cmd_line.find(">"));
-    }
-}
-
-string _parseCommandLineRedirectionSecond(string cmd_line){
-    if (cmd_line.find(">>") != std::string::npos){
-        return cmd_line.substr(cmd_line.find(">>")+2);
-    }
-    else { //'|' is in cmd_line
-        return cmd_line.substr(cmd_line.find(">")+1);
-    }
+bool check_if_redirection_or_pipe_command(const char* cmd_line,PIPES_REDICRECTION_CMD_TYPE* type_of_cmd) {
+	string str_cmd_line = string(cmd_line);
+	if(str_cmd_line.find("|&") != string::npos) {
+		*type_of_cmd=PIPE_STDERR;
+		return true;
+	}
+	if((str_cmd_line.find("|") != string::npos)) {
+		*type_of_cmd=PIPE_STDOUT;
+		return true;
+	}
+	if((str_cmd_line.find(">>") != string::npos)) {
+		*type_of_cmd=REDIRECTION_APPEND;
+		return true;
+	}
+	if((str_cmd_line.find(">") != string::npos)) {
+		*type_of_cmd=REDIRECTION_OVERWRITE;
+		return true;
+	}
+	*type_of_cmd=NOT_PIPE_OR_REDIRECTION;
+	return false;
 }
 
 int _parseCommandLine(const char *cmd_line, char **args) {
@@ -530,25 +331,26 @@ void SmallShell::setForegroundPid(pid_t new_fg_pid) {
 }
 Command* SmallShell::CreateCommand(const char *cmd_line) {
 
-    bool is_cmd_pipe = check_if_pipe_command(cmd_line);
-    bool is_cmd_redirection = check_if_redirection_command(cmd_line);
+
 
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-
     /** ignore the & sign **/
     _removeBackgroundSign(const_cast<char*>(firstWord.c_str()));
     firstWord = _trim(firstWord.c_str());
     /** ignore the & sign **/
-
-    assert(!(is_cmd_pipe&&is_cmd_redirection));
     //we allow only one "type" of command or none of them, but never both.
     //we first check if its pipe or redirection..always!
-
-    if (is_cmd_pipe){
-        return new PipeCommand(cmd_line);
-    } else if(is_cmd_redirection) {
-        return new RedirectionCommand(cmd_line);
+	PIPES_REDICRECTION_CMD_TYPE type_of_cmd=NOT_PIPE_OR_REDIRECTION;// if not working, allocate.. todo
+	bool is_pipe_or_redirection=check_if_redirection_or_pipe_command(cmd_line,&type_of_cmd);
+    if (is_pipe_or_redirection) {
+		assert(type_of_cmd!=NOT_PIPE_OR_REDIRECTION);//cant happen..
+		if(type_of_cmd==PIPE_STDOUT||type_of_cmd==PIPE_STDERR) {
+			return new PipeCommand(cmd_line,type_of_cmd);
+		}
+		if(type_of_cmd==REDIRECTION_APPEND||type_of_cmd==REDIRECTION_OVERWRITE) {
+			return new RedirectionCommand(cmd_line,type_of_cmd);
+		}
     }else if (firstWord.compare("chprompt") == 0) {
         return new ChpromptCommand(cmd_line);
     } else if (firstWord.compare("pwd") == 0) {
@@ -870,11 +672,25 @@ void QuitCommand::execute() {
     exit(1); //what argument to send?
 }
 
-RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line) {
-	int position_arrow=0;
-	this->cmd = _parseFirstRedirectionCommand(string(cmd_line),&position_arrow);//filling the arrow position
-    this->file_name = _ParseSecondRedirectionCommand(string(cmd_line),position_arrow,&this->cmdType);//using the arrow position...
-	assert(cmdType!=REDIRECTION_ILLEGAL);
+RedirectionCommand::RedirectionCommand(const char *cmd_line,PIPES_REDICRECTION_CMD_TYPE cmdType) : Command(cmd_line) {
+	this->cmdType=cmdType;
+	assert(cmdType==REDIRECTION_OVERWRITE||cmdType==REDIRECTION_APPEND);//should be only those...
+	string str_cmd_line=string(cmd_line);
+	string symbol_to_look_for;
+	int size_of_symbol=0;
+	if(cmdType==REDIRECTION_OVERWRITE)
+	{
+		symbol_to_look_for=">";
+		size_of_symbol=1;
+	}
+	else
+	{
+		symbol_to_look_for=">>";
+		size_of_symbol=2;
+	}
+	this->cmd= str_cmd_line.substr(0, str_cmd_line.find(symbol_to_look_for));
+	this->file_name= str_cmd_line.substr(str_cmd_line.find(symbol_to_look_for)+size_of_symbol);
+
 }
 
 void RedirectionCommand::execute() {
@@ -929,12 +745,25 @@ void RedirectionCommand::execute() {
 	delete cmd;
 }
 
-PipeCommand::PipeCommand(const char *cmd_line) : Command(cmd_line) {
-	int first_pipe_pos=0;
+PipeCommand::PipeCommand(const char *cmd_line,PIPES_REDICRECTION_CMD_TYPE cmdType) : Command(cmd_line) {
+	 this->cmdType=cmdType;
+	 assert(cmdType==PIPE_STDOUT||cmdType==PIPE_STDERR);//should be only those...
+	 string str_cmd_line=string(cmd_line);
+	 string symbol_to_look_for;
+	 int size_of_symbol=0;// accounts for "|" or "|&" when we parse so we can copy the right commands...
+	 if(cmdType==PIPE_STDOUT)
+	 {
+		 symbol_to_look_for="|";
+		 size_of_symbol=1;
+	 }
+	 else
+	 {
+		 symbol_to_look_for="|&";
+		 size_of_symbol=2;
+	 }
+	 this->frst= str_cmd_line.substr(0, str_cmd_line.find(symbol_to_look_for));
+	 this->scnd= str_cmd_line.substr(str_cmd_line.find(symbol_to_look_for)+size_of_symbol);//ziv do the redirection after that...
 
-	 this->frst= _parseFirstPipeCommand(string(cmd_line),&first_pipe_pos);
-	 this->scnd= _ParseSecondPipeCommand(string(cmd_line),first_pipe_pos,&this->cmdType);
-	 assert(this->cmdType!=PIPE_IILEGAL);
 }
 
 void PipeCommand::execute() {

@@ -19,8 +19,7 @@
 using std::string;
 using std::ostream;
 enum PIPE_CHANNEL{RD=0,WR=1};//used to make life easier .
-enum PIPE_CMD_TYPE{PIPE_IILEGAL=-1,PIPE_STDOUT=0,PIPE_STDERR=1};// will be returned in pipe parser.
-enum REDIRECTION_CMD_TYPE{REDIRECTION_ILLEGAL=-1,REDIRECTION_OVERWRITE=2,REDIRECTION_APPEND=3}; // will be returned in redirection parser.
+enum PIPES_REDICRECTION_CMD_TYPE{NOT_PIPE_OR_REDIRECTION=-1,PIPE_STDOUT=0,PIPE_STDERR=1,REDIRECTION_OVERWRITE=2,REDIRECTION_APPEND=3};// will be returned in pipe parser.
 enum FINDSTATUS{NOT_FOUND=0,FOUND=1};//serves as status for find method.
 class JobsList;
 
@@ -56,8 +55,8 @@ class PipeCommand : public Command {
   // TODO: Add your data members
  public:
 	string frst="",scnd="";
-	PIPE_CMD_TYPE cmdType=PIPE_IILEGAL;
-  PipeCommand(const char* cmd_line);
+	PIPES_REDICRECTION_CMD_TYPE cmdType=NOT_PIPE_OR_REDIRECTION;
+  PipeCommand(const char* cmd_line,PIPES_REDICRECTION_CMD_TYPE CmdType);
   virtual ~PipeCommand() {}
   void execute() override;
 };
@@ -66,8 +65,8 @@ class RedirectionCommand : public Command {
  // TODO: Add your data members
  public:
 	string cmd,file_name;
-	REDIRECTION_CMD_TYPE cmdType=REDIRECTION_ILLEGAL;
-  explicit RedirectionCommand(const char* cmd_line);
+	PIPES_REDICRECTION_CMD_TYPE cmdType=NOT_PIPE_OR_REDIRECTION;
+  explicit RedirectionCommand(const char* cmd_line,PIPES_REDICRECTION_CMD_TYPE cmdType);
   virtual ~RedirectionCommand() {}
   void execute() override;
   //void prepare() override;
