@@ -708,7 +708,7 @@ void RedirectionCommand::execute() {
 	SmallShell& shell=SmallShell::getInstance();
 	Command* cmd=shell.CreateCommand(this->cmd.c_str());
  if(this->cmdType==REDIRECTION_OVERWRITE) {
-	  fd_opened_file = open(file_name.c_str(),O_CREAT|O_WRONLY, S_IRWXU | S_IRWXG | S_IRWXO);//mode
+	  fd_opened_file = open(file_name.c_str(),O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);//mode
 	  if(fd_opened_file==-1)
 	  {
 		  perror("smash error: open failed");
