@@ -836,15 +836,30 @@ void PipeCommand::execute() {
 			}
 			//todo need to continue from here
 			// second child
-			dup2(fd[0], 0);
-			close(fd[0]);
-			close(fd[1]);
+			if(dup2(fd[0], 0)==-1) {
+				perror("smash error: dup2 failed");
+				exit(1);
+			}
+			if(close(fd[0])==-1) {
+				perror("smash error: close failed");
+				exit(1);
+			}
+			if(close(fd[1])==-1) {
+				perror("smash error: close failed");
+				exit(1);
+			}
 			command_2->execute();
 			exit(1);
 		}
 	}
-	close(fd[0]);
-	close(fd[1]);
+	if(close(fd[0])==-1) {
+		perror("smash error: close failed");
+		exit(1);
+	}
+	if(close(fd[1])==-1) {
+		perror("smash error: close failed");
+		exit(1);
+	}
 	//exit(1);
 }
 
