@@ -689,8 +689,7 @@ RedirectionCommand::RedirectionCommand(const char *cmd_line,PIPES_REDICRECTION_C
 		size_of_symbol=2;
 	}
 	this->cmd= str_cmd_line.substr(0, str_cmd_line.find(symbol_to_look_for));
-	this->file_name= str_cmd_line.substr(str_cmd_line.find(symbol_to_look_for)+size_of_symbol);
-
+	this->file_name= _trim(str_cmd_line.substr(str_cmd_line.find(symbol_to_look_for)+size_of_symbol));
 }
 
 void RedirectionCommand::execute() {
@@ -756,6 +755,7 @@ PipeCommand::PipeCommand(const char *cmd_line,PIPES_REDICRECTION_CMD_TYPE cmdTyp
 		 symbol_to_look_for="|";
 		 size_of_symbol=1;
 	 }
+	 // echo hi |& ziv
 	 else
 	 {
 		 symbol_to_look_for="|&";
