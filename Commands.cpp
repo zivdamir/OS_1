@@ -481,7 +481,11 @@ void ExternalCommand::execute() {
 	}
     if (child_pid == 0) // my son
     {
-		setpgrp();
+		if(setpgrp()==-1)
+		{
+			perror("smash error: setpgrp failed");
+			exit(1);
+		}
         if (isExternalComplex(string(cmd_line))) {
             if(execl("/bin/bash", "bash", "-c",/* “complex-external-command” need to be added by the instructions*/ cmd_line, nullptr)==-1){
 				perror("smash error: execv failed");
@@ -777,7 +781,9 @@ void PipeCommand::execute() {
 			perror("smash error: pipe failed");
 			exit(1);
 	}
-	pid_t frst_child=fork();
+	pid_t frst_child;
+	pid_t scnd_child;
+	frst_child=fork();
 	if(frst_child==-1)
 	{
 		perror("smash error: fork failed");
@@ -817,12 +823,10 @@ void PipeCommand::execute() {
 			exit(1);
 		}//stdout
 		command_1->execute();
-		delete command_1;
-		delete command_2;
 		exit(1);
 	}
 	else {
-		pid_t scnd_child=fork();
+		 scnd_child=fork();
 		if(scnd_child==-1)
 		{
 			perror("smash error: fork failed");
@@ -860,7 +864,12 @@ void PipeCommand::execute() {
 		perror("smash error: close failed");
 		exit(1);
 	}
-	//exit(1);
+	int finished_1,finished_2=1;
+	do {
+		 finished_1 = waitpid(frst_child, nullptr, WNOHANG | WUNTRACED | WCONTINUED);
+		 finished_2= waitpid(scnd_child,nullptr, WNOHANG | WUNTRACED | WCONTINUED);
+	} while(finished_1==0||finished_2==0);
+	return ;
 }
 
 PARAMSTATUS checkKillParams(char** arg, int arg_num)
