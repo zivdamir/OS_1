@@ -196,9 +196,9 @@ time_t JobEntry::getJobStoppingTime()
     return stop_time;
 }
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
-    string stopped = (jobEntry.stopped_flag)? "(stopped)":"";
+    string stopped = (jobEntry.stopped_flag)? " (stopped)":"";
      os <<"["<< jobEntry.id <<"]"<< " " << string(jobEntry.cmd_line) << " : " << jobEntry.getJobPid()
-     << " " << difftime(time(NULL),jobEntry.insertion_time)<<" secs" << " " << stopped;
+     << " " << difftime(time(NULL),jobEntry.insertion_time)<<" secs" << stopped;
     return os;
 }
 void JobEntry::stopJob()
@@ -251,11 +251,11 @@ void JobsList::removeFinishedJobs()
             data.erase(iterator);
         }else{
                 iterator++;
-
         }
     }
 }
 JobEntry *JobsList::getJobById(int job_id,enum FINDSTATUS& find_status) {
+    removeFinishedJobs();
     for (JobEntry *job: this->data) {
         if (job->getJobId() == job_id) {
             find_status = FOUND;
@@ -376,6 +376,7 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     return nullptr;
 }
 void SmallShell::executeCommand(const char *cmd_line) {
+    this->jobs_list->removeFinishedJobs();
     Command *cmd = CreateCommand(cmd_line);
     cmd->execute();
     delete cmd;
@@ -430,11 +431,13 @@ ChangeDirCommand::~ChangeDirCommand(){}
 void ChangeDirCommand::execute() {
     if (this->arg_num > 2) {
         cerr << "smash error: cd: too many arguments" << endl;
+        return;
     }
     SmallShell &instance = SmallShell::getInstance();
     if (strcmp(this->arg[1], "-") == 0) {
         if (instance.wasCDCalled == false) {
             cerr << "smash error: cd: OLDPWD not set" << endl;
+            return;
         } 
         else {
             char *to_switch_cwd = getcwd(NULL, 0);
@@ -579,10 +582,8 @@ void ForegroundCommand::execute()
             return;
         }
     }
-	//shell.setFgCommand(job_to_front->getCommand());
     job_to_front->printCommandForFgAndBgCommand();
     pid_t job_pid = job_to_front->getJobPid();
-    job_list->removeJobById(job_id);
 	shell.setForegroundPid(job_pid);
 	shell.setFgCommand(job_to_front->getCommand());
     /*----------------------------------------------------*/
@@ -592,11 +593,13 @@ void ForegroundCommand::execute()
 		perror("smash error: kill failed");
 		exit(1);
 	}
+    this->job_list->removeFinishedJobs();
     if(waitpid(job_pid,NULL,WUNTRACED)==-1){
 		perror("smash error: waitpid failed");
 		exit(1);
 	}
-	//shell.setFgCommand(nullptr);
+    shell.setForegroundPid(NO_PID_NUMBER);
+    job_list->removeJobById(job_id);
     /*----------------------------------------------------*/
 }
 
@@ -901,11 +904,21 @@ PARAMSTATUS checkKillParams(char** arg, int arg_num)
         first_letter=false;
     }
     string id_num_param = arg[2];
+    first_letter = true;
     for(char letter: id_num_param)
     {
+        if(first_letter && letter == '-')
+        {
+            continue;
+        }
         if (letter < '0' || letter > '9') {
             return NO_GOOD; //number_param[i] isn't a number..
         }
+    }
+    int sig_num = char_to_int(arg[1]);
+    if(sig_num < 1 || sig_num > 31)
+    {
+        return NO_GOOD;
     }
     return GOOD;
 }
@@ -937,5 +950,5 @@ void KillCommand::execute()
     {
         job_to_send_signal_to->stopJob();
     }
-    cout << "signal number "<< sig_num <<" was sent to pid " << job_to_send_signal_to->getJobPid() << endl;
+    cout << "signal number " << sig_num <<" was sent to pid " << job_to_send_signal_to->getJobPid() << endl;
 }

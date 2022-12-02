@@ -137,13 +137,16 @@ public:
     time_t getJobStoppingTime();
     void stopJob();
     void continueJob();
+    void setJobInsertionTime()
+    {
+        insertion_time = time(NULL);
+    }
 };
 
 class JobsList {
 private:
  // TODO: Add your data members
  std::vector<JobEntry*> data;
- //int curr_job_id_max = 0;//todo implement ziv ????ziv you are no good we no need this ok? no need! what is ziv what is?
 public:
   JobsList();
   void sort_JobsList();
@@ -163,6 +166,10 @@ public:
   {
       return data.size();
   }
+    /*std::vector<JobEntry*> getData()
+    {
+      return data;
+    }*/
 };
 
 class QuitCommand : public BuiltInCommand {
