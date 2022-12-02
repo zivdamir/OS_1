@@ -48,7 +48,7 @@ string _trim(const std::string &s) {
 
 /**external command support**/
 int _parseCommandLine(const char *cmd_line, char **args);
-//todo maybe add indicator to which one of the redirection symbols we found...for this momemnt we only test if we can spot it..
+
 
 //function to detect if command is redirection/pipe
 //function to parse the pipe/redirection command line and return its correct status
@@ -225,7 +225,7 @@ JobsList::~JobsList() {
 void JobsList::addJob(char cmd_line[80], pid_t job_pid, bool isStopped)
 {
     JobEntry* jobEntry = new JobEntry((this->data.size())? this->getMaxJobId()+1 : 1
-            ,job_pid,cmd_line,isStopped);//todo isStopped neccesary?
+            ,job_pid,cmd_line,isStopped);
     this->data.push_back(jobEntry);
    // this->curr_job_id_max=getMaxJobId();
 }
@@ -341,7 +341,7 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     /** ignore the & sign **/
     //we allow only one "type" of command or none of them, but never both.
     //we first check if its pipe or redirection..always!
-	PIPES_REDICRECTION_CMD_TYPE type_of_cmd=NOT_PIPE_OR_REDIRECTION;// if not working, allocate.. todo
+	PIPES_REDICRECTION_CMD_TYPE type_of_cmd=NOT_PIPE_OR_REDIRECTION;
 	bool is_pipe_or_redirection=check_if_redirection_or_pipe_command(cmd_line,&type_of_cmd);
     if (is_pipe_or_redirection) {
 		assert(type_of_cmd!=NOT_PIPE_OR_REDIRECTION);//cant happen..
@@ -841,8 +841,7 @@ void PipeCommand::execute() {
 				perror("smash error: setpgrp failed");
 				exit(1);
 			}
-			//todo need to continue from here
-			// second child
+
 			if(dup2(fd[0], 0)==-1) {
 				perror("smash error: dup2 failed");
 				exit(1);

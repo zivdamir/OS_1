@@ -31,7 +31,7 @@ void ctrlZHandler(int sig_num) {
 		std::cout<< "smash: process " << fg_pid << " was stopped" << std::endl;
 	}
 	return;
-    // TODO: Add your implementation
+
     /*
     cout << "smash: got ctrl-Z" << endl;
     SmallShell &instance = SmallShell::getInstance();
@@ -47,7 +47,7 @@ void ctrlZHandler(int sig_num) {
 }
 
 void ctrlCHandler(int sig_num) {
-  // TODO: Add your implementation
+
     cout << "smash: got ctrl-C" << endl;
     SmallShell& instance = SmallShell::getInstance();
     pid_t fg_pid = instance.getForegroundPid();

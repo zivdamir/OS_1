@@ -52,7 +52,7 @@ class ExternalCommand : public Command {
 };
 
 class PipeCommand : public Command {
-  // TODO: Add your data members
+
  public:
 	string frst="",scnd="";
 	PIPES_REDICRECTION_CMD_TYPE cmdType=NOT_PIPE_OR_REDIRECTION;
@@ -62,7 +62,7 @@ class PipeCommand : public Command {
 };
 
 class RedirectionCommand : public Command {
- // TODO: Add your data members
+
  public:
 	string cmd,file_name;
 	PIPES_REDICRECTION_CMD_TYPE cmdType=NOT_PIPE_OR_REDIRECTION;
@@ -79,7 +79,7 @@ public:
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-// TODO: Add your data members public:
+
 public:
   ChangeDirCommand(const char* cmd_line);
   virtual ~ChangeDirCommand();
@@ -145,7 +145,6 @@ public:
 
 class JobsList {
 private:
- // TODO: Add your data members
  std::vector<JobEntry*> data;
 public:
   JobsList();
@@ -160,7 +159,7 @@ public:
   JobEntry * getJobById(int ,enum FINDSTATUS& find_status);//findstatus should be sent as empty POINTER!!!
   void removeJobById(int jobId);
   JobEntry* getLastStoppedJob();
-  // TODO: Add extra methods or modify exisitng ones as needed
+
   void printAllJobsForQuitCommand();
   int getListSize()
   {
@@ -173,7 +172,7 @@ public:
 };
 
 class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members
+
 public:
     QuitCommand(const char* cmd_line);
     virtual ~QuitCommand() {}
@@ -189,7 +188,7 @@ class JobsCommand : public BuiltInCommand {
 };
 
 class ForegroundCommand : public BuiltInCommand {
- // TODO: Add your data members
+
  public:
   ForegroundCommand(const char* cmd_line);
   virtual ~ForegroundCommand() {}
@@ -197,7 +196,7 @@ class ForegroundCommand : public BuiltInCommand {
 };
 
 class BackgroundCommand : public BuiltInCommand {
- // TODO: Add your data members
+
  public:
   BackgroundCommand(const char* cmd_line);
   virtual ~BackgroundCommand() {}
@@ -206,7 +205,7 @@ class BackgroundCommand : public BuiltInCommand {
 
 class TimeoutCommand : public BuiltInCommand {
 /* Optional */
-// TODO: Add your data members
+
  const char* cmd_line;
  public:
   explicit TimeoutCommand(const char* cmd_line);
@@ -216,7 +215,7 @@ class TimeoutCommand : public BuiltInCommand {
 
 class FareCommand : public BuiltInCommand {
   /* Optional */
-  // TODO: Add your data members
+
  public:
   FareCommand(const char* cmd_line);
   virtual ~FareCommand() {}
@@ -225,7 +224,7 @@ class FareCommand : public BuiltInCommand {
 
 class SetcoreCommand : public BuiltInCommand {
   /* Optional */
-  // TODO: Add your data members
+
  public:
   SetcoreCommand(const char* cmd_line);
   virtual ~SetcoreCommand() {}
@@ -234,7 +233,7 @@ class SetcoreCommand : public BuiltInCommand {
 
 class KillCommand : public BuiltInCommand {
   /* Bonus */
- // TODO: Add your data members
+
  public:
   KillCommand(const char* cmd_line);
   virtual ~KillCommand() {}
