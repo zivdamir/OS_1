@@ -289,7 +289,8 @@ JobEntry* JobsList::getLastStoppedJob()
     {
         if(job->isStopped())
         {
-            if(last_stopped_job == nullptr || last_stopped_job_time < job->getJobStoppingTime())
+            if(last_stopped_job == nullptr || last_stopped_job_time < job->getJobStoppingTime()) //try to see if this changes
+				//background_test
             {
                 last_stopped_job = job;
                 last_stopped_job_time = job->getJobStoppingTime();
@@ -311,6 +312,7 @@ int JobsList::getMaxJobId() {
 }
 
 /**SmallShell class implementation**/
+
 SmallShell::SmallShell() {
     foreground_pid = NO_PID_NUMBER;
     prompt_name = "smash";
@@ -463,7 +465,6 @@ void ChangeDirCommand::execute() {
 				perror("smash error: chdir failed");
 				return;
 			}
-
             instance.setLastPwd(string(to_switch_cwd));
             free(to_switch_cwd);
         }
@@ -475,11 +476,13 @@ void ChangeDirCommand::execute() {
 			exit(1);
 		}
         instance.wasCDCalled = true;
+		string temp=instance.getLastPwd();
         instance.setLastPwd(string(to_switch_cwd));
 
         if(chdir(arg[1])==-1)
 		{
 			perror("smash error: chdir failed");
+			instance.setLastPwd(temp);// in case we fail, we already set our lastPwd to be curr cwd,but we didnt actually cd so we should revert the setlastpwd..
 			return;
 		}
         free(to_switch_cwd);
