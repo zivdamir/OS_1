@@ -272,14 +272,16 @@ JobEntry *JobsList::getJobById(int job_id,enum FINDSTATUS& find_status) {
 }
 void JobsList::removeJobById(int jobId)
 {
+
     for(auto iterator = data.begin(); iterator != data.end();)
     {
         if((*iterator)->getJobId() == jobId)
         {
             data.erase(iterator);
+			break;
         }
+		iterator++;
     }
-
 }
 JobEntry* JobsList::getLastStoppedJob()
 {
@@ -622,7 +624,9 @@ void ForegroundCommand::execute()
 
 	}while(done==0);
     shell.setForegroundPid(NO_PID_NUMBER);
-    //job_list->removeJobById(job_id);//???????????????
+    //job_list->removeJobById(job_id);
+	FINDSTATUS findstatus;
+
 	return;
     /*----------------------------------------------------*/
 }
