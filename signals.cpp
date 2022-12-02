@@ -10,7 +10,7 @@ void ctrlZHandler(int sig_num) {
 	SmallShell& shell=SmallShell::getInstance();
 	char* cmd_line = shell.getFgCommand();
     pid_t fg_pid = shell.getForegroundPid();
-	if(fg_pid ==0)
+	if(fg_pid ==NO_PID_NUMBER)
 	{
 		return;
 	}
@@ -27,8 +27,10 @@ void ctrlZHandler(int sig_num) {
         {
             shell.getJobsList()->addJob(cmd_line,fg_pid,true);
         }
+		shell.setForegroundPid(NO_PID_NUMBER);
 		kill(fg_pid,SIGSTOP);
 		std::cout<< "smash: process " << fg_pid << " was stopped" << std::endl;
+
 	}
 	return;
 
@@ -56,6 +58,8 @@ void ctrlCHandler(int sig_num) {
         kill(fg_pid,SIGKILL);
         cout<< "smash: process "<< fg_pid <<" was killed" << endl;
     }
+	instance.setForegroundPid(NO_PID_NUMBER);
+
 }
 
 

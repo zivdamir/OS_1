@@ -534,7 +534,6 @@ void ExternalCommand::execute() {
                 shell.setForegroundPid(child_pid);
                 shell.setFgCommand(cmd_line);
 				//shell.setFgCommand(this);
-                //printf("waiting \n");
                 if(waitpid(child_pid, NULL, WUNTRACED)==-1)
 				{
 					perror("smash error: waitpid failed");
@@ -614,12 +613,14 @@ void ForegroundCommand::execute()
 		exit(1);
 	}
     this->job_list->removeFinishedJobs();
-    if(waitpid(job_pid,NULL,WUNTRACED)==-1){
-		perror("smash error: waitpid failed");
-		exit(1);
-	}
+	int done=0;
+	do {
+		done=waitpid(job_pid,NULL,WNOHANG|WUNTRACED);
+
+	}while(done==0);
     shell.setForegroundPid(NO_PID_NUMBER);
-    job_list->removeJobById(job_id);
+    //job_list->removeJobById(job_id);//???????????????
+	return;
     /*----------------------------------------------------*/
 }
 
