@@ -224,6 +224,7 @@ JobsList::~JobsList() {
 }
 void JobsList::addJob(char cmd_line[80], pid_t job_pid, bool isStopped)
 {
+	removeFinishedJobs();// removing finished jobs before adding new jobs...
     JobEntry* jobEntry = new JobEntry((this->data.size())? this->getMaxJobId()+1 : 1
             ,job_pid,cmd_line,isStopped);
     this->data.push_back(jobEntry);
@@ -244,6 +245,10 @@ bool isFinished(JobEntry *job)
 }
 void JobsList::removeFinishedJobs()
 {
+	if(this->getListSize()==0)
+	{
+		return;// do nothing if the list is empty...if things start to break go here..
+	}
     for(auto iterator = data.begin(); iterator != data.end();)
     {
         int son_is_potent = waitpid((*iterator)->getJobPid(), nullptr, WNOHANG);
@@ -404,6 +409,11 @@ void SmallShell::setFgCommand(char* cmd_line) {
 GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 void GetCurrDirCommand::execute() {
     char *path = getcwd(NULL, 0);
+	if(path==NULL)
+	{
+		perror("smash error: getcwd failed");
+		return;
+	}
 
     cout << path << std::endl;
     free((void *) path);
@@ -433,6 +443,12 @@ void ChangeDirCommand::execute() {
         cerr << "smash error: cd: too many arguments" << endl;
         return;
     }
+	if(this->arg_num==1)
+	{
+		//if we only get "cd"
+		cerr<<"smash error:> "<< "“"<<cmd_line<<"”"<<endl;
+		return;
+	}
     SmallShell &instance = SmallShell::getInstance();
     if (strcmp(this->arg[1], "-") == 0) {
         if (instance.wasCDCalled == false) {
@@ -442,7 +458,11 @@ void ChangeDirCommand::execute() {
         else {
             char *to_switch_cwd = getcwd(NULL, 0);
 
-            chdir(instance.getLastPwd().c_str());
+            if(chdir(instance.getLastPwd().c_str())==-1)
+			{
+				perror("smash error: chdir failed");
+				return;
+			}
 
             instance.setLastPwd(string(to_switch_cwd));
             free(to_switch_cwd);
@@ -460,7 +480,7 @@ void ChangeDirCommand::execute() {
         if(chdir(arg[1])==-1)
 		{
 			perror("smash error: chdir failed");
-			exit(1);
+			return;
 		}
         free(to_switch_cwd);
     }
