@@ -20,17 +20,19 @@ void ctrlZHandler(int sig_num) {
         JobEntry* fg_job_in_list = shell.getJobsList()->getJobByPid(fg_pid,fg_found_in_list);
         if(fg_found_in_list==FOUND)
         {
-            //cout << "job id: " << fg_pid << " is in the list"<<endl;
             fg_job_in_list->setJobInsertionTime();
             fg_job_in_list->stopJob();
         }
         else
         {
-            //cout << "job id: " << fg_pid << " is not in the list"<<endl;
             shell.getJobsList()->addJob(cmd_line,fg_pid,true);
         }
 		shell.setForegroundPid(NO_PID_NUMBER);
-		kill(fg_pid,SIGSTOP);
+		if(kill(fg_pid,SIGSTOP)==-1)
+        {
+            perror("smash error: kill failed");
+            exit(1);
+        }
 		std::cout<< "smash: process " << fg_pid << " was stopped" << std::endl;
 
 	}
@@ -57,7 +59,11 @@ void ctrlCHandler(int sig_num) {
     pid_t fg_pid = instance.getForegroundPid();
     if (!(fg_pid==NO_PID_NUMBER))
     {
-        kill(fg_pid,SIGKILL);
+        if(kill(fg_pid,SIGKILL)==-1)
+        {
+            perror("smash error: kill failed");
+            exit(1);
+        }
         cout<< "smash: process "<< fg_pid <<" was killed" << endl;
     }
 	instance.setForegroundPid(NO_PID_NUMBER);
