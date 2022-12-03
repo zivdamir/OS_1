@@ -17,14 +17,16 @@ void ctrlZHandler(int sig_num) {
     if (!(fg_pid==NO_PID_NUMBER))
 	{
         FINDSTATUS fg_found_in_list;
-        JobEntry* fg_job_in_list = shell.getJobsList()->getJobById(fg_pid,fg_found_in_list);
+        JobEntry* fg_job_in_list = shell.getJobsList()->getJobByPid(fg_pid,fg_found_in_list);
         if(fg_found_in_list==FOUND)
         {
+            //cout << "job id: " << fg_pid << " is in the list"<<endl;
             fg_job_in_list->setJobInsertionTime();
             fg_job_in_list->stopJob();
         }
         else
         {
+            //cout << "job id: " << fg_pid << " is not in the list"<<endl;
             shell.getJobsList()->addJob(cmd_line,fg_pid,true);
         }
 		shell.setForegroundPid(NO_PID_NUMBER);

@@ -119,16 +119,21 @@ int char_to_int(const char* str)
     int value = 0;
     string temp = str;
     bool first_letter = true;
+    bool negative = false;
     for(char letter: temp)
     {
         if(first_letter && letter == '-')
         {
-            value = -value;
+            negative = true;
             continue;
         }
         value *= 10;
         value += letter - 48;
         first_letter = false;
+    }
+    if(negative)
+    {
+        value = -value;
     }
     return value;
 }
@@ -169,7 +174,7 @@ JobEntry::JobEntry(int id,pid_t pid,char cmd_line[80], bool stopped_flag)
     this->pid = pid;
     strcpy(this->cmd_line,cmd_line);
     this->insertion_time = time(NULL);
-    this->stop_time = time(NULL);
+    //this->stop_time = time(NULL);
     this->stopped_flag = stopped_flag;
 }
 JobEntry::~JobEntry() {}
@@ -188,13 +193,13 @@ bool JobEntry::isStopped() {
 void JobEntry::printCommandForFgAndBgCommand() {
     cout<< this->getCommand() << " : " << this->getJobPid() << endl;
 }
-void JobEntry::setJobStoppingTime() {
+/*void JobEntry::setJobStoppingTime() {
     stop_time = time(NULL);
 }
 time_t JobEntry::getJobStoppingTime()
 {
     return stop_time;
-}
+}*/
 ostream & operator<<(ostream &os, JobEntry &jobEntry) {
     string stopped = (jobEntry.stopped_flag)? " (stopped)":"";
      os <<"["<< jobEntry.id <<"]"<< " " << string(jobEntry.cmd_line) << " : " << jobEntry.getJobPid()
@@ -204,7 +209,7 @@ ostream & operator<<(ostream &os, JobEntry &jobEntry) {
 void JobEntry::stopJob()
 {
     this->stopped_flag = true;
-    setJobStoppingTime();
+    //setJobStoppingTime();
 }
 void JobEntry::continueJob()
 {
@@ -259,7 +264,7 @@ void JobsList::removeFinishedJobs()
         }
     }
 }
-JobEntry *JobsList::getJobById(int job_id,enum FINDSTATUS& find_status) {
+JobEntry* JobsList::getJobById(int job_id,enum FINDSTATUS& find_status) {
     removeFinishedJobs();
     for (JobEntry *job: this->data) {
         if (job->getJobId() == job_id) {
@@ -270,6 +275,19 @@ JobEntry *JobsList::getJobById(int job_id,enum FINDSTATUS& find_status) {
     find_status = NOT_FOUND;
     return nullptr;
 }
+JobEntry* JobsList::getJobByPid(int job_pid,enum FINDSTATUS& find_status)
+{
+    removeFinishedJobs();
+    for (JobEntry *job: this->data) {
+        if (job->getJobPid() == job_pid) {
+            find_status = FOUND;
+            return job;
+        }
+    }
+    find_status = NOT_FOUND;
+    return nullptr;
+}
+
 void JobsList::removeJobById(int jobId)
 {
 
@@ -285,18 +303,20 @@ void JobsList::removeJobById(int jobId)
 }
 JobEntry* JobsList::getLastStoppedJob()
 {
-    time_t last_stopped_job_time;
+   // time_t last_stopped_job_time;
     JobEntry* last_stopped_job = nullptr;
+    int last_stopped_job_id = NO_ID_NUMBER;
     for(JobEntry* job: this->data)
     {
-        if(job->isStopped())
+        if(job->isStopped() && last_stopped_job_id < job->getJobId())
         {
-            if(last_stopped_job == nullptr || last_stopped_job_time < job->getJobStoppingTime()) //try to see if this changes
+            last_stopped_job_id=job->getJobId();
+            last_stopped_job = job;
+           // if(last_stopped_job == nullptr || last_stopped_job_time < job->getJobStoppingTime()) //try to see if this changes
 				//background_test
-            {
-                last_stopped_job = job;
-                last_stopped_job_time = job->getJobStoppingTime();
-            }
+           // {
+          //      last_stopped_job = job;
+           //     last_stopped_job_time = job->getJobStoppingTime();
         }
     }
     return last_stopped_job;
@@ -339,8 +359,6 @@ void SmallShell::setForegroundPid(pid_t new_fg_pid) {
     foreground_pid = new_fg_pid;
 }
 Command* SmallShell::CreateCommand(const char *cmd_line) {
-
-
 
     string cmd_s = _trim(string(cmd_line));
     string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
@@ -501,7 +519,7 @@ bool isExternalComplex(string cmd_line) {
 ExternalCommand::ExternalCommand(const char *cmd_line) : Command(cmd_line) {}
 void ExternalCommand::execute() {
   SmallShell& shell=SmallShell::getInstance();
-    pid_t child_pid = fork();
+  pid_t child_pid = fork();
 	if(child_pid==-1)
 	{
 		perror("smash error: fork failed");
@@ -563,11 +581,19 @@ PARAMSTATUS checkFgAndBgCommandParams(char** arg,int arg_num)
     if(arg_num==2)
     {
         string number_param = arg[1];
+        bool first_letter = true;
+        bool negative = false;
         for(char letter: number_param)
         {
+            if(first_letter && letter == '-')
+            {
+                first_letter = false;
+                continue;
+            }
             if (letter < '0' || letter > '9') {
                 return NO_GOOD; //number_param[i] isn't a number..
             }
+            first_letter = false;
         }
     }
     return GOOD;
@@ -586,7 +612,7 @@ void ForegroundCommand::execute()
 
     this->job_list->removeFinishedJobs();
 
-    /*find the job in the job list, remove it and print it*/
+    /*find the job in the job list and print it*/
     JobEntry* job_to_front;
     int job_id = NO_ID_NUMBER;
     FINDSTATUS status;
@@ -704,7 +730,7 @@ void QuitCommand::execute() {
         job_list->printAllJobsForQuitCommand();
         this->job_list->killAllJobs();
     }
-    exit(1); //what argument to send?
+    exit(0); //what argument to send?
 }
 
 RedirectionCommand::RedirectionCommand(const char *cmd_line,PIPES_REDICRECTION_CMD_TYPE cmdType) : Command(cmd_line) {
@@ -743,7 +769,7 @@ void RedirectionCommand::execute() {
 	  if(fd_opened_file==-1)
 	  {
 		  perror("smash error: open failed");
-		  exit(1);
+		  return;
 	  }
  }
 	if(this->cmdType==REDIRECTION_APPEND) {
@@ -751,7 +777,7 @@ void RedirectionCommand::execute() {
 		if(fd_opened_file==-1)
 		{
 			perror("smash error: open failed");
-			exit(1);
+            return;
 		}
 	}
 	if(dup2(fd_opened_file,1)==-1)
@@ -936,13 +962,15 @@ PARAMSTATUS checkKillParams(char** arg, int arg_num)
     {
         if(first_letter && letter == '-')
         {
+            first_letter=false;
             continue;
         }
         if (letter < '0' || letter > '9') {
             return NO_GOOD; //number_param[i] isn't a number..
         }
+        first_letter=false;
     }
-    int sig_num = char_to_int(arg[1]);
+    int sig_num = -char_to_int(arg[1]);
     if(sig_num < 1 || sig_num > 31)
     {
         return NO_GOOD;
@@ -958,7 +986,7 @@ void KillCommand::execute()
         cerr << "smash error: kill: invalid arguments" << endl;
         return;
     }
-    int sig_num = char_to_int(arg[1]);
+    int sig_num = -char_to_int(arg[1]);
     int job_id = char_to_int(arg[2]);
 
     FINDSTATUS job_exists_in_the_background;

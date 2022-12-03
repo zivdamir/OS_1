@@ -113,7 +113,7 @@ private:
     pid_t pid;
     char cmd_line[80]={0};
     time_t insertion_time;
-    time_t stop_time;
+    //time_t stop_time;
     bool stopped_flag;
 public:
     int getJobId();
@@ -133,8 +133,8 @@ public:
     }
     friend ostream& operator<<(ostream& os,JobEntry& jobEntry);
 
-    void setJobStoppingTime();
-    time_t getJobStoppingTime();
+    //void setJobStoppingTime();
+    //time_t getJobStoppingTime();
     void stopJob();
     void continueJob();
     void setJobInsertionTime()
@@ -156,7 +156,7 @@ public:
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
-  JobEntry * getJobById(int ,enum FINDSTATUS& find_status);//findstatus should be sent as empty POINTER!!!
+  JobEntry * getJobById(int id,enum FINDSTATUS& find_status);//findstatus should be sent as empty POINTER!!!
   void removeJobById(int jobId);
   JobEntry* getLastStoppedJob();
 
@@ -165,6 +165,8 @@ public:
   {
       return data.size();
   }
+  JobEntry* getJobByPid(int job_pid,enum FINDSTATUS& find_status);
+
     /*std::vector<JobEntry*> getData()
     {
       return data;
