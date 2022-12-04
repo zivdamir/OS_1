@@ -394,12 +394,14 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
         return new BackgroundCommand(cmd_line);
     }else if(firstWord.compare("quit") == 0){
         return new QuitCommand(cmd_line);
-    } else if(firstWord.compare("kill") == 0)
-    {
+    } else if(firstWord.compare("kill") == 0){
         return new KillCommand(cmd_line);
-    }else{
-        return new ExternalCommand(cmd_line);
-    }
+    }else if(firstWord.compare("setcore")==0) {
+		return new SetcoreCommand(cmd_line);
+	}else{
+			return new ExternalCommand(cmd_line);
+		}
+
     return nullptr;
 }
 void SmallShell::executeCommand(const char *cmd_line) {
@@ -1007,3 +1009,60 @@ void KillCommand::execute()
     }
     cout << "signal number " << sig_num <<" was sent to pid " << job_to_send_signal_to->getJobPid() << endl;
 }
+
+SetcoreCommand::SetcoreCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
+}
+
+void SetcoreCommand::execute() {
+	//hirerachy : invalid arguments, then job id exists, and then core is correct
+    //if jobid doesn't exist...
+	SmallShell& instance=SmallShell::getInstance();
+	if(arg_num!=3)
+	{
+		cerr<<"smash error: setcore: invalid arguments"<<endl;
+		return;
+	}
+	try{
+		core_to_set=stoi(arg[2]);
+		job_id_of_job_to_set_core_on=stoi(arg[1]);
+	}
+	catch(exception& e)
+	{
+		cerr<<"smash error: setcore: invalid arguments"<<endl;
+		return;
+	}
+	//check for existence of job-id
+	FINDSTATUS found;
+	JobEntry* job=instance.getJobsList()->getJobById(job_id_of_job_to_set_core_on,found);
+	if(found==NOT_FOUND||job==nullptr)
+	{
+		cerr<<"smash error: setcore: job-id "<<job_id_of_job_to_set_core_on<<" does not exist"<<endl;
+		return;
+	}
+	long number_of_cores= sysconf(_SC_NPROCESSORS_CONF);
+	if(number_of_cores==-1){
+		cerr<<"smash error: sysconf failed"<<endl;//todo
+		return;
+	}
+	if(core_to_set>number_of_cores-1 || core_to_set<0)
+	{
+		cerr<<"smash error: setcore: invalid core number"<<endl;
+		return;
+	}
+	//setcore
+	cpu_set_t set_for_job;
+	CPU_ZERO(&set_for_job);
+	CPU_SET(core_to_set,&set_for_job);
+	if(sched_setaffinity(job->getJobPid(),sizeof(cpu_set_t),&set_for_job)==-1)
+	{
+		cerr<<"smash error: sched_setaffinity failed"<<endl;
+		return;
+	}
+	return;
+	/*cerr<<"smash error: setcore: job-id "<<job_id_of_job_to_set_core_on<<" does not exist"<<endl;
+	//if core number is invalid
+	cerr<<"smash error: setcore: invalid core number"<<endl;
+	//if arguemtns are invalid
+	cerr<<"smash error: setcore: invalid arguments"<<endl;*/
+}
+

@@ -228,6 +228,9 @@ class SetcoreCommand : public BuiltInCommand {
   /* Optional */
 
  public:
+	int core_to_set=0;
+	int job_id_of_job_to_set_core_on=0;
+
   SetcoreCommand(const char* cmd_line);
   virtual ~SetcoreCommand() {}
   void execute() override;
