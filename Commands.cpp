@@ -1024,6 +1024,7 @@ void SetcoreCommand::execute() {
 	}
 	try{
 		core_to_set=stoi(arg[2]);
+
 		job_id_of_job_to_set_core_on=stoi(arg[1]);
 	}
 	catch(exception& e)
@@ -1031,6 +1032,7 @@ void SetcoreCommand::execute() {
 		cerr<<"smash error: setcore: invalid arguments"<<endl;
 		return;
 	}
+
 	//check for existence of job-id
 	FINDSTATUS found;
 	JobEntry* job=instance.getJobsList()->getJobById(job_id_of_job_to_set_core_on,found);
@@ -1039,6 +1041,7 @@ void SetcoreCommand::execute() {
 		cerr<<"smash error: setcore: job-id "<<job_id_of_job_to_set_core_on<<" does not exist"<<endl;
 		return;
 	}
+	cout<<*job<<endl;
 	long number_of_cores= sysconf(_SC_NPROCESSORS_CONF);
 	if(number_of_cores==-1){
 		cerr<<"smash error: sysconf failed"<<endl;//todo
@@ -1053,11 +1056,12 @@ void SetcoreCommand::execute() {
 	cpu_set_t set_for_job;
 	CPU_ZERO(&set_for_job);
 	CPU_SET(core_to_set,&set_for_job);
-	if(sched_setaffinity(job->getJobPid(),sizeof(cpu_set_t),&set_for_job)==-1)
+	if(sched_setaffinity(job->getJobPid(),sizeof(set_for_job),&set_for_job)==-1)
 	{
 		cerr<<"smash error: sched_setaffinity failed"<<endl;
 		return;
 	}
+
 	return;
 	/*cerr<<"smash error: setcore: job-id "<<job_id_of_job_to_set_core_on<<" does not exist"<<endl;
 	//if core number is invalid
