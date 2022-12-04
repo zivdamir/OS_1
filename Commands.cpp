@@ -49,7 +49,7 @@ string _trim(const std::string &s) {
 /**external command support**/
 int _parseCommandLine(const char *cmd_line, char **args);
 
-
+//h
 //function to detect if command is redirection/pipe
 //function to parse the pipe/redirection command line and return its correct status
 
