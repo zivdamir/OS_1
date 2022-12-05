@@ -732,6 +732,7 @@ void QuitCommand::execute() {
         job_list->printAllJobsForQuitCommand();
         this->job_list->killAllJobs();
     }
+	delete this;//todo
     exit(0); //what argument to send?
 }
 
@@ -882,6 +883,8 @@ void PipeCommand::execute() {
 			exit(1);
 		}//stdout
 		command_1->execute();
+		delete command_1;
+		delete command_2;
 		exit(1);
 	}
 	else {
@@ -911,6 +914,8 @@ void PipeCommand::execute() {
 				exit(1);
 			}
 			command_2->execute();
+			delete command_1;
+			delete command_2;
 			exit(1);
 		}
 	}
@@ -927,6 +932,8 @@ void PipeCommand::execute() {
 		 finished_1 = waitpid(frst_child, nullptr, WNOHANG | WUNTRACED | WCONTINUED);
 		 finished_2= waitpid(scnd_child,nullptr, WNOHANG | WUNTRACED | WCONTINUED);
 	} while(finished_1==0||finished_2==0);
+	delete command_1;
+	delete command_2;
 	return ;
 }
 
